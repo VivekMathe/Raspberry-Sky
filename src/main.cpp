@@ -15,7 +15,7 @@ int main() {
     std::cout << "Inverse of A:\n" << A_inv << "\n\n";
 
     // Check multiplication
-    std::cout << "A * A_inv:\n" << A * A_inv << std::endl;
-
+    std::cout << "A * A_inv:\n" << A * A_inv << std::endl;    
+    std::cout << Navio2::addOne(3) << std::endl;
     return 0;
 }
