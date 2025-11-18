@@ -1,2 +1,0 @@
-/usr/bin/ar qc libCommon.a CMakeFiles/Common.dir/Common/gpio.cpp.o CMakeFiles/Common.dir/Common/I2Cdev.cpp.o CMakeFiles/Common.dir/Common/MPU9250.cpp.o CMakeFiles/Common.dir/Common/MS5611.cpp.o CMakeFiles/Common.dir/Common/Ublox.cpp.o CMakeFiles/Common.dir/Common/Util.cpp.o
-/usr/bin/ranlib libCommon.a
