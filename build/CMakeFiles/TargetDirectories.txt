@@ -1,0 +1,14 @@
+/mnt/c/Users/vivek/rsky/build/CMakeFiles/rsky.dir
+/mnt/c/Users/vivek/rsky/build/CMakeFiles/throttle.dir
+/mnt/c/Users/vivek/rsky/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/vivek/rsky/build/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/thermal-camera/CMakeFiles/thermal-camera.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/thermal-camera/CMakeFiles/edit_cache.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/thermal-camera/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/Navio2/CMakeFiles/Common.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/Navio2/CMakeFiles/Navio2.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/Navio2/CMakeFiles/edit_cache.dir
+/mnt/c/Users/vivek/rsky/build/ext_libs/Navio2/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/vivek/rsky/build/int_libs/ekflib/CMakeFiles/ekflib.dir
+/mnt/c/Users/vivek/rsky/build/int_libs/ekflib/CMakeFiles/edit_cache.dir
+/mnt/c/Users/vivek/rsky/build/int_libs/ekflib/CMakeFiles/rebuild_cache.dir

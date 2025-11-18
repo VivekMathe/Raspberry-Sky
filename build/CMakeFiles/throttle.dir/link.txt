@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/throttle.dir/src/throttle_pass.cpp.o -o throttle  ext_libs/thermal-camera/libthermal-camera.a ext_libs/Navio2/libCommon.a ext_libs/Navio2/libNavio2.a ext_libs/Navio2/libCommon.a 

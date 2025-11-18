@@ -1,0 +1,2 @@
+/usr/bin/ar qc libekflib.a CMakeFiles/ekflib.dir/dcm.cpp.o
+/usr/bin/ranlib libekflib.a

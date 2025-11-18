@@ -1,0 +1,2 @@
+/usr/bin/ar qc libNavio2.a CMakeFiles/Navio2.dir/Navio2/ADC_Navio2.cpp.o CMakeFiles/Navio2.dir/Navio2/Led_Navio2.cpp.o CMakeFiles/Navio2.dir/Navio2/LSM9DS1.cpp.o CMakeFiles/Navio2.dir/Navio2/PWM.cpp.o CMakeFiles/Navio2.dir/Navio2/RCInput_Navio2.cpp.o CMakeFiles/Navio2.dir/Navio2/RCOutput_Navio2.cpp.o CMakeFiles/Navio2.dir/Navio2/RGBled.cpp.o
+/usr/bin/ranlib libNavio2.a
