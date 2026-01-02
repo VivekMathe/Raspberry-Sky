@@ -3,7 +3,7 @@ clear
 close all
 %put absolute path 
 
-simulation = 1;
+simulation = 0;
 
 switch simulation
     case 0
@@ -14,9 +14,9 @@ switch simulation
         t = truthtable{:,'t'};
         truth_pos = truthtable{:,{'n','e','d'}};
         ekf_pos = ekftable{:,{'n','e','d'}};
-        plot3(truth_pos(:,1),truth_pos(:,2),-truth_pos(:,3))
+        scatter3(truth_pos(:,1),truth_pos(:,2),-truth_pos(:,3),5)
         hold on
-        plot3(ekf_pos(:,1),ekf_pos(:,2),-ekf_pos(:,3))
+        scatter3(ekf_pos(:,1),ekf_pos(:,2),-ekf_pos(:,3),5)
         xlabel("North")
         ylabel("East")
         zlabel("Up")
@@ -33,6 +33,14 @@ switch simulation
         ylabel("East")
         zlabel("Up")
         title("Controls Isolated Simulation")
-        
+    case 2
+        controltable = readtable('..\build\path_test.csv');
+        t = controltable{:,'t'};
+        pos = 3.048 * controltable{:,{'n','e','d'}};
+        plot3(pos(:,1),pos(:,2),-pos(:,3))
+        xlabel("North")
+        ylabel("East")
+        zlabel("Up")
+        title("Controls Isolated Simulation")
 
 end

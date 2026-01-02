@@ -12,5 +12,18 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src)
 add_executable(simulation ${myExec}/simulation.cpp)
 target_include_directories(simulation PUBLIC ${extlibs}/eigen)
 target_link_libraries(simulation PRIVATE gnclib)
+
+add_executable(ekfsim ${myExec}/ekf_simulation.cpp)
+target_include_directories(ekfsim PUBLIC ${extlibs}/eigen)
+target_link_libraries(ekfsim PRIVATE gnclib)
+
+add_executable(controlsim ${myExec}/controls_simulation.cpp)
+target_include_directories(controlsim PUBLIC ${extlibs}/eigen)
+target_link_libraries(controlsim PRIVATE gnclib)
+
+add_executable(pathsim ${myExec}/pathing_simulation.cpp)
+target_include_directories(pathsim PUBLIC ${extlibs}/eigen)
+target_link_libraries(pathsim PRIVATE gnclib)
+
 add_executable(throttle ${myExec}/throttle_pass.cpp)
 target_link_libraries(throttle PRIVATE thermal-camera Common Navio2)

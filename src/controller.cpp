@@ -38,37 +38,38 @@ Eigen::Vector3d Controller::outer_achievePos(Eigen::Vector3d p_des, Eigen::Vecto
 	//outer loop
 	Eigen::Vector3d e_pos = p_des - control_state.block(0, 0, 3, 1);
 	Eigen::Vector3d e_vel = v_des - control_state.block(3, 0, 3, 1);
-	Eigen::Vector3d a_des = e_pos.array() * pos_Kp.array() + e_vel.array() * pos_Kd.array();
-	a_des(0) = saturate(a_des(0), a_sat.first);
-	a_des(1) = saturate(a_des(1), a_sat.first);
-	a_des(2) = saturate(a_des(2), a_sat.second);
-
-	Eigen::Vector3d a_des_body = dcmI_B(control_state(6), control_state(7), control_state(8)).transpose() * a_des;
-	double phi_des = saturate(a_des_body(1) / g(2),max_angle);
-	double theta_des = saturate(-a_des_body(0) / g(2),max_angle);
-	// az = -T*cos(phi)*cos(theta)/m + g
-	double T_des = (g(2) - a_des_body(2)) * m / (cos(phi_des) * cos(phi_des));
-	T_des = saturate(T_des, T_sat.first, false);//making sure greater than min thrust
-	T_des = saturate(T_des, T_sat.second); //less than max thrust
+	Eigen::Vector3d a_cmd = e_pos.array() * pos_Kp.array() + e_vel.array() * pos_Kd.array();
+	a_cmd(0) = saturate(a_cmd(0), a_sat.first);
+	a_cmd(1) = saturate(a_cmd(1), a_sat.first);
+	a_cmd(2) = saturate(a_cmd(2), a_sat.second);
+	double T_cmd = (g(3) - a_cmd(3)) * m;
+	T_cmd = saturate(T_cmd, T_sat.first, false);//making sure greater than min thrust
+	T_cmd = saturate(T_cmd, T_sat.second); //less than max thrust
+	Eigen::Matrix2d A;
+	A << sin(control_state(2)),cos(control_state(2)),-cos(control_state(2)),sin(control_state(2));
+	Eigen::Vector2d res =-m / T_cmd * A.inverse()*a_cmd.block(0,0,2,1);
+	double phi_cmd = saturate(res(0), max_angle);
+	double theta_cmd = saturate(res(1) / g(2),max_angle);
+	
 	Eigen::Vector3d output;
-	output << phi_des, theta_des, T_des;
+	output << phi_cmd, theta_cmd, T_cmd;
 	return output;
 }
 
-Eigen::Vector3d Controller::inner_achieveAtt(Eigen::Vector3d att_des, Eigen::Vector3d omega_des)
+Eigen::Vector3d Controller::inner_achieveAtt(Eigen::Vector3d att_cmd, Eigen::Vector3d omega_cmd)
 {
-	Eigen::Vector3d e_att = att_des - control_state.block(6, 0, 3, 1);
-	Eigen::Vector3d e_omega = omega_des - control_state.block(9, 0, 3, 1);
+	Eigen::Vector3d e_att = att_cmd - control_state.block(6, 0, 3, 1);
+	Eigen::Vector3d e_omega = omega_cmd - control_state.block(9, 0, 3, 1);
 	Eigen::Vector3d moments = e_att.array() * att_Kp.array() + e_omega.array() * att_Kd.array();
 	return moments;
 }
 
-Eigen::Matrix<double, 4, 1> Controller::achieveState(Eigen::Vector3d p_des, Eigen::Vector3d v_des, double psi_des, Eigen::Vector3d omega_des) //returns T L M N
+Eigen::Matrix<double, 4, 1> Controller::achieveState(Eigen::Vector3d p_cmd, Eigen::Vector3d v_cmd, double psi_cmd, Eigen::Vector3d omega_cmd) //returns T L M N
 {
-	Eigen::Vector3d outer_output = outer_achievePos(p_des, v_des);
-	Eigen::Vector3d att_des;
-	att_des << outer_output(0), outer_output(1), psi_des;
-	Eigen::Vector3d moments = inner_achieveAtt(att_des, omega_des);
+	Eigen::Vector3d outer_output = outer_achievePos(p_cmd, v_cmd);
+	Eigen::Vector3d att_cmd;
+	att_cmd << outer_output(0), outer_output(1), psi_cmd;
+	Eigen::Vector3d moments = inner_achieveAtt(att_cmd, omega_cmd);
 	Eigen::Matrix<double, 4, 1> commands;
 	commands(0) = outer_output(2);
 	commands.block(1, 0, 3, 1) = moments;

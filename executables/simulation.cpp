@@ -1,7 +1,6 @@
 #define _USE_MATH_DEFINES
 #include <Eigen/Dense>
 #include "ekf.h"
-#include "controller.h"
 #include "math_utils.h"
 #include <cmath>
 #include <random>
@@ -40,7 +39,7 @@ Eigen::Matrix<double, 10, 1> commandedpath()
 	Eigen::Vector3d x_des;
 	x_des << 10, 4, 2;
 	Eigen::Vector3d v_des;
-	v_des << 0, 0, 0;
+	v_des << 2, 0, 0;
 	double psi = M_PI/4;
 	Eigen::Vector3d rate_des;
 	rate_des << 0, 0, 0;
