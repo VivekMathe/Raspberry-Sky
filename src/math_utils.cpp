@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include "math_utils.h"
-
+#include <iostream>
 using namespace std;
 Eigen::Matrix3d dcmI_B(double phi, double theta, double psi)
 {
@@ -24,10 +24,11 @@ Eigen::Matrix3d dcmI_B(double phi, double theta, double psi)
 	return Z_rot * Y_rot * X_rot;
 }
 
-Eigen::Matrix<double, 15, 1> get_xdot(Eigen::Matrix<double, 15, 1> x, Eigen::Vector3d g, Eigen::Vector3d a_inertial_measured, Eigen::Vector3d omega)
+Eigen::Matrix<double, 15, 1> get_xdot(Eigen::Matrix<double, 15, 1> x, Eigen::Vector3d g, Eigen::Vector3d a_body_measured, Eigen::Vector3d omega)
 {
 	//note that a_measured is the inertial acceleration, as measured from the body frame. No gravity included, and still in body vectors.
 	//a_inertial_measured includes the correction due to off-cg IMU location
+	//x is expected to be attitude, pos, v, accel bias, gyro bias
 	Eigen::Matrix<double, 15, 1> xdot;
 	Eigen::Matrix3d T; //This is the transform from body rates to euler rates
 	T << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
@@ -35,35 +36,8 @@ Eigen::Matrix<double, 15, 1> get_xdot(Eigen::Matrix<double, 15, 1> x, Eigen::Vec
 		0, sin(x(0)) / cos(x(1)), cos(x(0)) / cos(x(1));
 	xdot.block(0, 0, 3, 1) = T * omega;
 	xdot.block(3, 0, 3, 1) = x.block(6, 0, 3, 1);
-	xdot.block(6, 0, 3, 1) = dcmI_B(x(0), x(1), x(2)) * a_inertial_measured + g;
+	xdot.block(6, 0, 3, 1) = dcmI_B(x(0), x(1), x(2)) * a_body_measured + g;
 	xdot.block(9,0,6,1) = Eigen::Matrix<double, 6, 1>::Zero();
-	return xdot;
-}
-//GET DYNAMICS DOES NOT USE THE SAME STATES AS X
-Eigen::Matrix<double, 12, 1> get_dynamics(Eigen::Matrix<double, 12, 1> x, Eigen::Vector3d g, double m, Eigen::Vector3d inertias, double thrust, Eigen::Vector3d moments)
-{
-//x = n e d, vn ve vd, phi theta psi, p q r
-//xdot = vn ve vd, an ae ad, euler_rates, omegadot
-	double L = moments(0);
-	double M = moments(1);
-	double N = moments(2);
-	double Ix = inertias(0);
-	double Iy = inertias(1);
-	double Iz = inertias(2);
-	Eigen::Matrix3d to_euler; //This is the transform from body rates to euler rates
-	to_euler << 1, sin(x(6))* tan(x(7)), cos(x(6))* tan(x(7)),
-		0, cos(x(6)), -sin(x(6)),
-		0, sin(x(6)) / cos(x(7)), cos(x(6)) / cos(x(7));
-	Eigen::Matrix<double, 12, 1> xdot;
-	Eigen::Vector3d forces;
-	forces << 0,0,-thrust;
-	xdot.block(0, 0, 3, 1) = x.block(3, 0, 3, 1);
-	xdot.block(3, 0, 3, 1) = dcmI_B(x(6), x(7), x(8)) * forces / m + g;
-	xdot.block(6, 0, 3, 1) = to_euler * x.block(9, 0, 3, 1);
-	xdot(9) = ((Iy - Iz) * x(10) * x(11) + L) / Ix;
-	xdot(10) = ((Iz - Ix) * x(9) * x(11) + M) / Iy;
-	xdot(11) = ((Ix - Iy) * x(9) * x(10) + N) / Iz;
-
 	return xdot;
 }
 
@@ -94,6 +68,117 @@ Eigen::Matrix<double, 15, 12> noise_coupling(Eigen::Matrix<double, 15, 1> x)
 	G.block(12, 9, 3, 3) = Eigen::Matrix3d::Identity();
 	
 	return G;
+}
+
+//////////////////
+//Simulator functions
+
+Eigen::Vector3d sim_imu_accels(Eigen::Matrix<double, 12, 1> x_true, Eigen::Vector3d commanded_body_accel, Eigen::Vector3d alpha,Eigen::Vector3d r,Eigen::Vector3d imunoise)
+{
+	//x_true is attitude, body rates, pos, v
+	// commanded_body_accels is true non-gravity acceleration in the body frame, at the COM of the object. Essentially, for quadrotor, specific thrust. 
+	// r = IMU - CG (body frame). 
+	// In EKF, we use -r to map IMU measurement back to CG.	
+	//returns IMU acceleration reading for a given body acceleration at CG. 
+
+	Eigen::Vector3d g;
+	g << 0, 0, 9.81;
+	Eigen::Vector3d omega_measured = x_true.block(3, 0, 3, 1);
+	Eigen::Vector3d off_cg_accels = commanded_body_accel + alpha.cross(r) + omega_measured.cross(omega_measured.cross(r)); //moving imu stuff to COM
+	
+	double ground = 0.0;
+	double penetration = x_true(8) - ground; // negative if above ground
+	if (penetration > 0) 
+	{  // below ground and moving down
+		
+		double k_ground = 1000; // spring-like constant
+		double b_ground = 50;   // damping
+		Eigen::Vector3d off_cg_inertial = dcmI_B(x_true(0), x_true(1), x_true(2)) * off_cg_accels;
+		off_cg_inertial(2) += -k_ground * penetration - b_ground * x_true(11);
+		off_cg_accels = dcmI_B(x_true(0), x_true(1), x_true(2)).transpose() * off_cg_inertial; //gravity not subtracted because it is never added in the first place
+	}
+	
+	Eigen::Vector3d a_measured = off_cg_accels + imunoise;
+
+	return a_measured;
+}
+Eigen::Vector3d sim_gyro_rates(Eigen::Matrix<double, 12, 1> x_true, Eigen::Vector3d gyronoise)
+{
+	return x_true.block(3, 0, 3, 1) + gyronoise;
+}
+
+Eigen::Vector4d sim_measurement(Eigen::Vector4d x_true_measured, Eigen::Vector4d m_noise)
+{
+	return x_true_measured + m_noise;
+}
+
+//GET DYNAMICS DOES NOT USE THE SAME STATES AS EKF. get_xdot is for the KALMAN FILTER. This is for propagating true 12d state: attitude, body rates, pos, vel
+Eigen::Matrix<double, 12, 1> get_dynamics(Eigen::Matrix<double, 12, 1> x, Eigen::Vector3d g, double m, Eigen::Vector3d inertias, double thrust, Eigen::Vector3d moments)
+{
+	//x = phi theta psi, p q r, n e d, vn ve vd, 
+	//xdot = euler_rates, omegadot, vn ve vd, an ae ad, 
+	double L = moments(0);
+	double M = moments(1);
+	double N = moments(2);
+	double Ix = inertias(0);
+	double Iy = inertias(1);
+	double Iz = inertias(2);
+	
+	Eigen::Matrix3d to_euler; //This is the transform from body rates to euler rates
+	to_euler << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
+		0, cos(x(0)), -sin(x(0)),
+		0, sin(x(0)) / cos(x(1)), cos(x(0)) / cos(x(1));
+	Eigen::Matrix<double, 12, 1> xdot;
+	Eigen::Vector3d forces;
+	forces << 0, 0, -thrust;
+	xdot.block(0, 0, 3, 1) = to_euler * x.block(3, 0, 3, 1);
+	xdot(3) = ((Iy - Iz) * x(4) * x(5) + L) / Ix;
+	xdot(4) = ((Iz - Ix) * x(3) * x(5) + M) / Iy;
+	xdot(5) = ((Ix - Iy) * x(3) * x(4) + N) / Iz;
+	xdot.block(6, 0, 3, 1) = x.block(9, 0, 3, 1);
+	xdot.block(9, 0, 3, 1) = dcmI_B(x(0), x(1), x(2)) * forces / m + g;
+
+
+	
+	double penetration = x(8); // negative if above ground
+	if (penetration > 0)
+	{  // below ground and moving down
+		double k_ground = 1000; // spring-like constant
+		double b_ground = 50;   // damping
+		xdot(11) += -k_ground * penetration - b_ground * x(11);
+	}
+	
+	return xdot;
+}
+
+
+//////////////////
+//Utility functions
+
+Eigen::Matrix<double, 12, 1> noise12d()
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::normal_distribution<double> dist(0.0, 1.0);
+	Eigen::Matrix<double, 12, 1> noise;
+	for (int i = 0; i < 12; i++)
+	{
+		noise(i) = dist(gen);
+	}
+	return noise;
+}
+
+Eigen::Matrix<double, 4, 1> noise4d()
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::normal_distribution<double> dist(0.0, 1.0);
+	Eigen::Matrix<double, 4, 1> noise;
+	for (int i = 0; i < 4; i++)
+	{
+		noise(i) = dist(gen);
+	}
+	return noise;
 }
 
 double wrapPi(double angle)

@@ -20,6 +20,6 @@ private:
 
 public:
 	Guidance::Guidance(Eigen::Vector3d pos0, double x_box_min, double x_box_max, double y_box_min, double y_box_max, double numpasses, double cruise_speed, double takeoff);
-	Eigen::Matrix<double, 10, 1> Guidance::getTarget();
+	Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1>);
 };
 

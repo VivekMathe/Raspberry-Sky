@@ -9,6 +9,9 @@
 #include <fstream>
 #include <algorithm>
 
+
+#include <chrono>
+
 Eigen::Matrix<double, 6, 1> path(double t) //gives out true body rates and body accels for the path
 {
 	/*
@@ -139,8 +142,10 @@ int main() {
 				truth_file << std::endl;
 			}
 		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 	truth_file.close();
 	ekf_file.close();
 
 	return 0;
+}
