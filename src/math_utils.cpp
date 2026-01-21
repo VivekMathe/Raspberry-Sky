@@ -24,10 +24,13 @@ Eigen::Matrix3d dcmI_B(double phi, double theta, double psi)
 	return Z_rot * Y_rot * X_rot;
 }
 
+////////////////////////////
+////EKF FUNCTIONS
+
 Eigen::Matrix<double, 15, 1> get_xdot(Eigen::Matrix<double, 15, 1> x, Eigen::Vector3d g, Eigen::Vector3d a_body_measured, Eigen::Vector3d omega)
 {
-	//note that a_measured is the inertial acceleration, as measured from the body frame. No gravity included, and still in body vectors.
-	//a_inertial_measured includes the correction due to off-cg IMU location
+	//note that a_measured is the IMU measurement, as measured from the body frame. No gravity included, and still in body vectors.
+	//a_inertial_measured includes the correction due to off-cg IMU location, so it is a CG acceleration
 	//x is expected to be attitude, pos, v, accel bias, gyro bias
 	Eigen::Matrix<double, 15, 1> xdot;
 	Eigen::Matrix3d T; //This is the transform from body rates to euler rates
@@ -41,16 +44,15 @@ Eigen::Matrix<double, 15, 1> get_xdot(Eigen::Matrix<double, 15, 1> x, Eigen::Vec
 	return xdot;
 }
 
-Eigen::Matrix<double, 15, 15> jacobian(Eigen::Matrix<double, 15, 1> x, Eigen::Vector3d g, Eigen::Vector3d a_inertial_measured, Eigen::Vector3d omega)
+Eigen::Matrix<double, 15, 15> jacobian(Eigen::Matrix<double, 15, 1> x, Eigen::Vector3d g, Eigen::Vector3d a_body_measured, Eigen::Vector3d omega)
 { 
-	//note that a_inertial_measured is the inertial acceleration, as measured from the body frame. No gravity included, and still in body vectors.
 	double eps = 1e-6;
 	Eigen::Matrix<double, 15, 15> A;
 	for (int i = 0; i < 15; i++)
 	{
 		Eigen::Matrix<double, 15, 1> dx = Eigen::Matrix<double, 15,1>::Zero();
 		dx(i) = eps;
-		A.col(i) = (get_xdot(x + dx, g, a_inertial_measured, omega) - get_xdot(x - dx, g, a_inertial_measured, omega)) / (2 * eps);
+		A.col(i) = (get_xdot(x + dx, g, a_body_measured, omega) - get_xdot(x - dx, g, a_body_measured, omega)) / (2 * eps);
 	}
 	return A;
 }

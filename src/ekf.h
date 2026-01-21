@@ -19,7 +19,7 @@ private:
 public:
 	//Constructor. Need gravity vector in NED, 
 	EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 15, 1> x0, Eigen::Vector3d gyro0, Eigen::Vector3d accel0, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector4d sigmav, double freq);
-	void estimate(Eigen::Vector3d omega, Eigen::Vector3d body_accels);
+	void EKF::estimate(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels);
 	void update(Eigen::Vector4d m);
 	Eigen::Matrix<double, 15, 1> getState();
 	Eigen::Matrix<double, 12, 1> getControlState();
