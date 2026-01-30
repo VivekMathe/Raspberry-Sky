@@ -16,6 +16,7 @@ Guidance::Guidance(Eigen::Matrix<double,12,1> x, Eigen::Vector2d n_bounds, Eigen
 	takeoff_height = takeoff;
 	cruise = cruise_speed;
 	fov = 6 * .3048; //6 foot
+	buffer = fov / 4;
 	lawnmower_stripes.resize(passes);
 	lawnmower_stripes.setZero();
 	delta_e = (ebounds(1) - ebounds(0) - fov/2) / (passes - 1); //distance between stripes
@@ -28,10 +29,9 @@ Guidance::Guidance(Eigen::Matrix<double,12,1> x, Eigen::Vector2d n_bounds, Eigen
 	K = gain;
 	edir = 1;
 	ndir = 1;
-
 	//north is to the right, east is up. Stripes will be along east. 
-
 }
+
 Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 {
 	Eigen::Matrix<double, 10, 1> commands;
@@ -43,21 +43,20 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 	{
 	case 1: //takeoff
 	{
-		Eigen::Vector2d center;
-		center <<nbounds.mean(), ebounds.mean();
-		Eigen::Vector2d ne_des = (center - x0.block(6, 0, 2, 1)) / (center - x0.block(6, 0, 2, 1)).norm() * fov;
+		Eigen::Vector2d ne_des;
+		ne_des << x0(0) + std::copysign(buffer + .1, (nbounds.mean() - x0(0))), lawnmower_stripes(stripe_index);
 
 		psides = x(2);
 		omegades = Eigen::Vector3d::Zero();
 		pdes << ne_des(0), ne_des(1), -takeoff_height;
 		vdes = Eigen::Vector3d::Zero();
-		double res = std::abs(pdes(2) - x(8));
+		double res = (pdes - x.block(6, 0, 3, 1)).norm();
 		if (res < .02)
 		{
 
 			//done with takeoff, this is now initializing the search pattern
 			phase += 1;
-			std::cout << "Takeoff completed, beginning search" << std::endl;	
+			std::cout << "Takeoff completed, beginning search" << std::endl;
 			Eigen::Index minIndex;
 			((ebounds.array() - x(7)).cwiseAbs()).minCoeff(&minIndex); //finding nearest stripe
 			if (minIndex == 0)
@@ -79,17 +78,15 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 				ndir = -1; //going down
 			}
 
-			((lawnmower_stripes.array() - x(7)).cwiseAbs()).minCoeff(&stripe_index);
 		}
 		break;
 	}
 	case 2: //searching
-	{	
+	{
 		double target_e = lawnmower_stripes(stripe_index);
-		double buffer = fov/4;
 		double ve;
 		double vn;
-		if (x(6) > nbounds(1)-buffer || x(6) < nbounds(0)+buffer) //!at_end prevents this from triggering constantly outside of bounds
+		if (x(6) > nbounds(1) - buffer || x(6) < nbounds(0) + buffer) //!at_end prevents this from triggering constantly outside of bounds
 		{
 			if (!at_end)
 			{
@@ -106,7 +103,7 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 				std::cout << "POS" << std::endl << x.block(6, 0, 2, 1) << std::endl << std::endl;
 				ve = 0;
 			}
-			else if (x(9)*ndir < 0)
+			else if (x(9) * ndir < 0)
 			{
 				ve = 0;
 			}
@@ -120,11 +117,12 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 			ve = K * (target_e - x(7));
 			at_end = false;
 		}
-		ve = saturate(ve,cruise);
+		ve = saturate(ve, cruise);
 		vn = ndir * cruise;
 		pdes << x(6), x(7), -takeoff_height; //not commanding n and e: Error is 0, velocity field should keep these in touch
-		
+
 		//extra nudge to push in bounds if we're going outside of the true bounds, as this can be catastrophic.
+		
 		if (x(6) > nbounds(1))
 		{
 			pdes(0) = x(6) - fov / 8;
@@ -142,7 +140,7 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 			pdes(1) = x(7) + fov / 8;
 		}
 		
-		psides = x(2); 
+		psides = x(2);
 		omegades = Eigen::Vector3d::Zero();
 		vdes << vn, ve, 0;
 		break;
@@ -160,5 +158,4 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 	commands << psides, omegades, pdes, vdes;
 	//returns psides, omegades, pdes, vdes
 	return commands;
-	
 }

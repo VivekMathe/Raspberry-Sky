@@ -18,6 +18,7 @@ private:
 	int ndir;
 	bool at_end;
 	double fov;
+	double buffer;
 	double K;
 	Eigen::VectorXd lawnmower_stripes;
 

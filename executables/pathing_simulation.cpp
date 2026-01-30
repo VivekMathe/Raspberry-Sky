@@ -105,7 +105,7 @@ int main() {
 	controller.update(x);
 	//controller.update(x_true); //for testing
 
-	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, takeoff_height,.5);
+	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, takeoff_height,.8);
 	double t = 0;
 	
 
