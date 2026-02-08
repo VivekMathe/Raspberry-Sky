@@ -15,19 +15,14 @@
 #include <chrono>
 #include <thread>
 #include <functional>
-
-void datacollection(Vector3d gyro_data, Vector3d imu_data, Vector3d optitrack_data)
-{
-	gyro_data = ? ;
-	imu_data = ? ;
-	Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
-	optitrack_data = opti_data.block(0, 0, 3, 1);
-}
+#include "IMUHandler.h"
 
 
 int main() {
 
 	openPort();
+
+////////////////////////////////////////////////////////////////////////////////////////// SETUP
 
 	//BASE SETUP OF PHYSICS
 	Vector3d g;
@@ -35,9 +30,6 @@ int main() {
 	Vector3d inertias;
 	inertias << .00756, .00757, .01393;
 	g << 0, 0, 9.81;
-	double freq = 100.0;
-	double m_freq = 100.0;
-	double deltat = 1.0 / freq;
 	double tc = .028;
 	double Kt = 4.0;
 	double Kq = 2.35;
@@ -90,7 +82,7 @@ int main() {
 
 
 	//EKF SETUP, INITIAL MEASUREMENTS
-	EKF ekf(r, sigmaw, sigmav, freq);
+	EKF ekf(r, sigmaw, sigmav);
 	//CONTROLLER SETUP
 	Controller controller(Kp_outer, Kd_outer, Kp_inner, Kd_inner, T_sat, acc_sat, max_angle, m);
 	//controller.update(x_true); //for testing
@@ -109,70 +101,84 @@ int main() {
 	Vector4d forces;
 
 	//SOME SORT OF TELEMETRY STUFF HERE
-
-
+	IMUHandler imu;
 	Eigen::Matrix<double,5,1> mocapData = readDatalink();
-
+	Eigen::Matrix<double, 6, 1> imu_data = imu.update();
 	Vector3d imu_omega; //read measurements from IMU
 	Vector3d imu_accels; //IMU
 	Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
 
-	double t = 0;
-	auto t_ref = std::chrono::system_clock::now();
-	while(true)
+	///////////////////
+	// //Frequencies
+	///////////////////
+	double process_freq = 200.0;
+	double m_freq = 50.0;
+	//control loop should be 400 hz, but we don't need to limit it 
+
+	auto t_ref = std::chrono::system_clock::now(); //main loop clock
+	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
+	auto process_t = std::chrono::system_clock::now(); //process clock
+
+////////////////////////////////////////////////////////////////////////////////////////// SETUP OVER
+
+	while (true)
 	{
 		//WAIT FUNCTION TO PAD THE .01 seconds.
-
-		ekf.estimate(); //predict state at current time step
-x		if hasmeasurement  // 5th value in mocapData matrix is valid bit
+		auto current_time = std::chrono::system_clock::now();
+		double dt = std::chrono::duration<double>(current_time - process_t).count();
+		if (dt >= 1 / process_freq)
 		{
-			measurement = ? ; //optitrack
-			ekf.update(measurement); //update our state estimate
+			ekf.estimate(dt); //predict state at current time step
+			imu_data = imu.update();
+			imu_omega = imu_data.block(0, 0, 3, 1);
+			imu_accels = imu_data.block(3, 0, 3, 1);
+			current_time = std::chrono::system_clock::now();
+			dt = std::chrono::duration<double>(current_time - process_t).count(); //remeasuring time just to be accurate. Prolly unecessary 
+			ekf.imureading(imu_omega, imu_accels, dt);
+			process_t = current_time;
+		}
+
+		//there will be some time lag between the ekf estimate and the measurement update, but this should be small enough to ignore
+		current_time = std::chrono::system_clock::now();
+		dt = std::chrono::duration<double>(current_time - measurement_t).count();
+		if (dt >= 1 / m_freq) // 5th value in mocapData matrix is valid bit
+		{
+			Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
+			if (opti_data(4) == true) //if valid
+			{
+				measurement = opti_data.block(0, 0, 3, 1);
+				ekf.update(measurement); //update our state estimate
+			}
+			else
+			{
+				//maybe have some sort of warning, telemetry, etc.
+			}
+			
 		}
 		Vector12d x = ekf.getControlState();
 		controller.update(x); //update internal control state
-		
-		//get commanded quantities
 
-		commands = //NEED CODE TO READ MANUAL COMMANDS INTO MATRIX OF DESIRED QUANTITIES
-			controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
+		//get commanded quantities
+		Eigen::Matrix<double, 6, 1> rc_data = rc_controller.read_ppm_vector();
+		////*****NEED SOMETHING TO TURN PWM INTO VCMD*******
+		//Maybe two ramps connected by a 0 in the middle area
+		Vector3d v_cmds;
+		
+		controls = controller.manualControl(v_cmds); //get forces
 		motor_cmds = mixer.inverse() * controls; //get motor commands
 		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
 		//COMMAND THE MOTORS
-		
-		if (armed)
+
+		if (armed) //something from receiver
 		{
-			motordriver.
-		}
-		
-				//PROBABLY WANT SOME SORT OF FAILSAFE. IF CANT GET MEAUSURMENTS, USE LAST AVAILABLE
-		if hasmeasurements //grab new imu measurements
-		{
-			imu_omega = ? ; //read measurements from IMU
-			imu_accels = ? ; //IMU
-			ekf.imureading(imu_omega, imu_accels);
-		}//otherwise the imu doesnt update inside ekf, and we use old info (may or may not be catastrophic)
-		else
-		{
-			//maybe send a warning via telemetry?
-		}
-		auto current_time = std::chrono::system_clock::now();
-		if(current_time - now <= deltat)
-		{
-			std::this_thread::sleep_for(deltat - (current_time - now))
+			motordriver.command(throttle2pwm(motor_cmds));
 		}
 		else
 		{
-			//SEND SOME WARNING TO GROUND STATION. THIS MEANS THAT OUR CODE IS SLOWER THAN OUR PROCESS MODEL
+			break;
 		}
-		now = current_time;
-		//else, it stays the same
-
-
-		//TELEMETRY REPORTING STATE HERE. Maybe this will be a separate thread, so architecture may change
-		
-
 	}
+
 	return 0;
 }

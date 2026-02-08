@@ -94,7 +94,7 @@ int main() {
 	gyro_bias.setZero();
 
 	//EKF creation, initialization
-	EKF ekf(r, sigmaw, sigmav, freq); //ekf created
+	EKF ekf(r, sigmaw, sigmav); //ekf created
 
 	Vector3d truth_measured = x_true.block(3, 0, 3, 1);
 	Vector3d measurement = sim_measurement(truth_measured, v);
@@ -163,8 +163,8 @@ int main() {
 		imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
 		imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3,0,3,1), r, w.block(3, 0, 3, 1));
 		//estimate
-		ekf.estimate(); 
-		ekf.imureading(imu_omega, imu_accels);
+		ekf.estimate(deltat); 
+		ekf.imureading(imu_omega, imu_accels,deltat);
 		v = noise3d().asDiagonal() * sigmav;
 		truth_measured << x_true(6), x_true(7), x_true(8);
 		measurement = sim_measurement(truth_measured, v);

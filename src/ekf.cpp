@@ -3,7 +3,7 @@
 #include "math_utils.h"
 #include <iostream>
 
-EKF::EKF(Vector3d r, Vector12d sigmaw, Vector3d sigmav, double freq)
+EKF::EKF(Vector3d r, Vector12d sigmaw, Vector3d sigmav)
 {
 	//r = IMU - CG position = IMU pos (CG = 0,0,0).
 	//constructor, setting up important vectors, matrices
@@ -12,7 +12,6 @@ EKF::EKF(Vector3d r, Vector12d sigmaw, Vector3d sigmav, double freq)
 	alpha.setZero();
 	omega_measured.setZero();
 	body_accels.setZero();
-	dt = 1 / freq;
 	x.setZero(); //phi, theta, psi, n, e, d, vn,ve,vd, b_ax,b_ay,b_az, b_p,b_q,b_r
 	Q = sigmaw.asDiagonal() * sigmaw.asDiagonal();
 	R = sigmav.asDiagonal() * sigmav.asDiagonal();
@@ -28,7 +27,7 @@ void EKF::initialize(Vector3d measurement, Vector3d gyro0, Vector3d accel0, Vect
 	x.block(9, 0, 3, 1) = bias_accel;
 	x.block(12, 0, 3, 1) = bias_gyro;
 }
-void EKF::imureading(Vector3d omega, Vector3d new_imu_accels)
+void EKF::imureading(Vector3d omega, Vector3d new_imu_accels,double dt)
 {
 	Vector3d alpha_raw = (omega - omega_measured) / dt;//updating our rates and accelerations for the next prediction 
 	alpha = alpha * .7 + (1.0 - .7) * alpha_raw;
@@ -37,7 +36,7 @@ void EKF::imureading(Vector3d omega, Vector3d new_imu_accels)
 	body_accels = new_imu_accels - x.block(9, 0, 3, 1);
 }
 
-void EKF::estimate() 
+void EKF::estimate(double dt) 
 {
 	//correct body_accels to be acting on CG. Rigid body means that omega isn't impacted
 	Vector3d com_body_accels =  body_accels + alpha.cross(-radius) + omega_measured.cross(omega_measured.cross(-radius)); //moving imu stuff to COM
@@ -46,7 +45,7 @@ void EKF::estimate()
 	A = jacobian(x, g, com_body_accels, omega_measured);
 	Eigen::Matrix<double, 15, 12> G = noise_coupling(x); 
 	Matrix15d pdot = A * P + P * A.transpose() + G*Q*G.transpose();
-	x = x + get_xdot(x, g, com_body_accels, omega_measured) * dt; //euler integration
+	x = x + xdot * dt; //euler integration
 	P = P + pdot * dt; //euler integration
 	P = (P + P.transpose()) / 2.0; //enforcing symmetry 
 	//std::cout <<"Velocity derivative: " << std::endl << get_xdot(x, g, com_body_accels, omega_measured).block(6, 0, 3, 1) << std::endl << "Body accels: " << std::endl << com_body_accels << std::endl;

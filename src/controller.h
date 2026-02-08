@@ -21,6 +21,7 @@ public:
 		std::pair<double, double> acc_sat, double angle_maximum,double m);
 	void Controller::update(Vector12d x); //This is from no ekf simulation
 	Vector4d Controller::achieveState(double psi_cmd, Vector3d omega_cmd, Vector3d p_cmd, Vector3d v_cmd); //returns T L M N
+	Vector4d Controller::manualControl(Vector3d v_cmd);
 	Vector4d Controller::innerTest(Vector3d att_cmd, Vector3d omega_cmd);
 	Vector12d Controller::getState();
 

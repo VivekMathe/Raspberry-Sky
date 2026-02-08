@@ -15,14 +15,13 @@ private:
 	Vector3d body_accels;
 	Vector3d radius;
 	Vector3d omega_measured;
-	double dt;
 
 public:
 	//Constructor. Need gravity vector in NED, 
-	EKF::EKF(Vector3d r, Vector12d sigmaw, Vector3d sigmav, double freq);
+	EKF::EKF(Vector3d r, Vector12d sigmaw, Vector3d sigmav);
 	void EKF::initialize(Vector3d measurement, Vector3d gyro0, Vector3d accel0, Vector3d bias_accel, Vector3d bias_gyro); //set up initial states. Initial measurement, per se
-	void EKF::imureading(Vector3d omega, Vector3d new_imu_accels);
-	void EKF::estimate();
+	void EKF::imureading(Vector3d omega, Vector3d new_imu_accels, double dt);
+	void EKF::estimate(double dt);
 	void EKF::update(Vector3d m);
 	Vector15d getState();
 	Vector12d getControlState();
