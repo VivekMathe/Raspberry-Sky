@@ -25,6 +25,6 @@ private:
 public:
 	Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double pgain, double vgain);
 	Vector10d getTarget(Vector12d x);
-	Vector3d manualCommands(Eigen::Matrix<double,6,1>);
+	Vector4d manualCommands(Eigen::Matrix<double,6,1>);
 };
 

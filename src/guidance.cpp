@@ -153,7 +153,28 @@ Vector10d Guidance::getTarget(Vector12d x)
 	//returns psides, omegades, pdes, vdes
 	return commands;
 }
-Vector3d Guidance::manualCommands(Eigen::Matrix<double, 6, 1> pwms)
+Vector4d Guidance::manualCommands(Eigen::Matrix<double, 6, 1> pwms)
 {
-	return Eigen::Matrix<double, 3, 1>::Zero();
+	Vector4d pwms; //vn ve vd psi
+	pwms << pwms(1), pwms(0), pwms(2), pwms(3); 
+	Vector4d commands;
+	commands = cruise * (pwms.array() - 1500) / 500;
+	{
+		if (pwms(2) <= 1400)
+		{
+			commands(2) = cruise * 1 / 400 * (commands(2) - 1400);
+		}
+		else if (commands(2) < 1600)
+		{
+			commands(2) = 0;
+		}
+		else
+		{
+			commands(2) = cruise * 1 / 400 * (commands(2) - 1600);
+		}
+	}
+
+	
+
+	return commands;//vn ve vd psi
 }

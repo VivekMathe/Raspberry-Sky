@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(rsky)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(myExec ${CMAKE_SOURCE_DIR}/executables) 
 set(extlibs ${CMAKE_SOURCE_DIR}/ext_libs)
