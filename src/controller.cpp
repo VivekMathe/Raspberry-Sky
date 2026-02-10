@@ -67,26 +67,20 @@ Vector4d Controller::achieveState(double psi_cmd, Vector3d omega_cmd, Vector3d p
 	return commands;
 }
 
-Vector4d Controller::manualControl(Vector3d v_body_cmds)
+Vector4d Controller::manualControl(Vector4d cmds)
 {
+	//cmds is yawrate vn ve vd
 	Matrix3d dcm = dcmI_B(control_state(0), control_state(1), control_state(2));
-	Vector3d v_cmd = dcm * v_body_cmds;
+	Vector3d v_cmd = dcm * cmds.block(1, 0, 3, 1);
 	Vector3d outer_output = outer_achievePos(control_state.block(6,0,3,1), v_cmd);
 	Vector3d att_cmd;
-	att_cmd << outer_output(0), outer_output(1), control_state(2);
-	Vector3d moments = inner_achieveAtt(att_cmd, Vector3d::Zero());
+	att_cmd << outer_output(0), outer_output(1), control_state(2); //not commanding psi
+	Vector3d omega_cmd;
+	omega_cmd << 0, 0, cmds(0); //adding in yaw rate
+	Vector3d moments = inner_achieveAtt(att_cmd, omega_cmd);
 	Vector4d commands;
 	commands << outer_output(2), moments;
 	return commands;
-}
-
-Vector4d Controller::innerTest(Vector3d att_cmd, Vector3d omega_cmd) // for inner loop control only: For test stand and manual
-{
-	Vector3d moments = inner_achieveAtt(att_cmd, omega_cmd);
-	Vector4d commands;
-	commands << 0, moments;
-	return commands;
-
 }
 
 Vector12d Controller::getState()

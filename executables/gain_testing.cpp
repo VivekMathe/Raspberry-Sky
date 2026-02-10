@@ -40,6 +40,7 @@ int main() {
 	Vector2d e_bounds;
 	e_bounds << 0, 15 * .3048;
 	double cruise = .75;
+	double yaw_rate = .5; //rad/s, about 28 degrees per second at max
 	double takeoff_height = 2;
 
 	///////////////////
@@ -116,7 +117,7 @@ int main() {
 	Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
 	Vector12d x = ekf.getControlState();
-	Guidance guidance(x, n_bounds, e_bounds, 4, cruise, takeoff_height, 1, .5); //initialize guidance system
+	Guidance guidance(x, n_bounds, e_bounds, 4, cruise,yaw_rate, takeoff_height, 1, .5); //initialize guidance system
 
 	///////////////////
 	// //Frequencies

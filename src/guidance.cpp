@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 
-Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double pgain, double vgain)
+Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double yaw_rate, double takeoff, double pgain, double vgain)
 {
 	x0 = x;
 	phase = 1;
@@ -15,6 +15,7 @@ Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpas
 	passes = numpasses;
 	takeoff_height = takeoff;
 	cruise = cruise_speed;
+	yaw_lim = yaw_rate;
 	fov = 6 * .3048; //6 foot
 	buffer = fov / 4;
 	lawnmower_stripes.resize(passes);
@@ -155,22 +156,25 @@ Vector10d Guidance::getTarget(Vector12d x)
 }
 Vector4d Guidance::manualCommands(Eigen::Matrix<double, 6, 1> pwms)
 {
-	Vector4d motor_pwms; //vn ve vd psi
-	motor_pwms << pwms(1), pwms(0), pwms(2), pwms(3); 
-	Vector4d commands;
-	commands = cruise * (motor_pwms.array() - 1500) / 500;
+	Vector4d motor_pwms; //psirate vn ve vd 
+	motor_pwms << pwms(3), pwms(1), pwms(0), pwms(2);
+	Vector4d commands; //psirate vn ve vd
+	commands = (motor_pwms.array() - 1500) / 500; //scaling to -1 to 1
+	commands(0) = commands(0) * yaw_lim; //scaling yaw rate
+	commands.block(1, 0, 3, 1) = commands.block(1, 0, 3, 1) * cruise; //scaling to crusie speed
 	{
-		if (motor_pwms(2) <= 1400)
+		//two ramps with a deadzone in the middle at 0 throttle
+		if (motor_pwms(3) <= 1400)
 		{
-			commands(2) = cruise * 1 / 400 * (commands(2) - 1400);
+			commands(3) = cruise * 1 / 400 * (commands(3) - 1400);
 		}
-		else if (motor_pwms(2) < 1600)
+		else if (motor_pwms(3) < 1600)
 		{
-			commands(2) = 0;
+			commands(3) = 0;
 		}
 		else
 		{
-			commands(2) = cruise * 1 / 400 * (commands(2) - 1600);
+			commands(3) = cruise * 1 / 400 * (commands(3) - 1600);
 		}
 	}
 

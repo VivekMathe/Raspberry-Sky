@@ -24,6 +24,7 @@ int main() {
 	Vector2d e_bounds;
 	e_bounds << 0, 15 * .3048;
 	double cruise = .75;
+	double yaw_rate = .5; //rad/s, about 28 degrees per second at max
 	double takeoff_height = 2;
 	Vector3d target_pos;
 	target_pos << 3, 6, 0;
@@ -110,7 +111,7 @@ int main() {
 	controller.update(x);
 	//controller.update(x_true); //for testing
 
-	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, takeoff_height,1,.5);
+	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, yaw_rate, takeoff_height,1,.5);
 	double t = 0;
 	
 
