@@ -8,8 +8,8 @@ private:
 	int phase; //1 = takeoff. 2 = search. 3 = descend. 4 = Hover, drop payload. 5 = retreat to some point. 6 = land. 
 	int passes;
 	Eigen::Index stripe_index;
-	Eigen::Vector2d nbounds; 
-	Eigen::Vector2d ebounds; 
+	Vector2d nbounds; 
+	Vector2d ebounds; 
 	double cruise;
 	double takeoff_height;
 	bool found;
@@ -23,7 +23,8 @@ private:
 	double Kd;
 	Eigen::VectorXd lawnmower_stripes;
 public:
-	Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double pgain, double vgain);
-	Vector10d Guidance::getTarget(Vector12d x);
+	Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double pgain, double vgain);
+	Vector10d getTarget(Vector12d x);
+	Vector3d manualCommands(Eigen::Matrix<double,6,1>);
 };
 

@@ -27,8 +27,6 @@ int main() {
 	//BASE SETUP OF PHYSICS
 	Vector3d g;
 	double m = .75;
-	Vector3d inertias;
-	inertias << .00756, .00757, .01393;
 	g << 0, 0, 9.81;
 	double tc = .028;
 	double Kt = 4.0;
@@ -36,6 +34,13 @@ int main() {
 	double d_arm = .15;
 	Vector3d r = Vector3d::Zero(); //can be changed to add an IMU offset
 
+	//SETUP OF ROOM
+	Vector2d n_bounds;
+	n_bounds << 0, 30 * .3048;
+	Vector2d e_bounds;
+	e_bounds << 0, 15 * .3048;
+	double cruise = .75;
+	double takeoff_height = 2;
 
 	///////////////////
 	//GAINS CHANGE HERE
@@ -108,6 +113,8 @@ int main() {
 	Vector3d imu_accels; //IMU
 	Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
+	Vector12d x = ekf.getControlState();
+	Guidance guidance(x, n_bounds, e_bounds, 4, cruise, takeoff_height, 1, .5); //initialize guidance system
 
 	///////////////////
 	// //Frequencies
@@ -156,14 +163,14 @@ int main() {
 			}
 			
 		}
-		Vector12d x = ekf.getControlState();
+		x = ekf.getControlState();
 		controller.update(x); //update internal control state
 
 		//get commanded quantities
 		Eigen::Matrix<double, 6, 1> rc_data = rc_controller.read_ppm_vector();
 		////*****NEED SOMETHING TO TURN PWM INTO VCMD*******
 		//Maybe two ramps connected by a 0 in the middle area
-		Vector3d v_cmds;
+		Vector3d v_cmds = guidance.manualCommands(rc_data);
 		
 		controls = controller.manualControl(v_cmds); //get forces
 		motor_cmds = mixer.inverse() * controls; //get motor commands

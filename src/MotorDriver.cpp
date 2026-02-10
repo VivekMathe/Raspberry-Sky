@@ -74,8 +74,3 @@ void MotorDriver::wind_down()
     usleep(50000);
 }
 
-Eigen::Vector4d throttle2pwm(Eigen::Vector4d throttles)
-{
-    Eigen::Vector4d pwms = (throttles.array() + 1.0) * 1000;
-    return pwms;
-}

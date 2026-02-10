@@ -30,4 +30,4 @@ Vector3d noise3d();
 double wrapPi(double angle);
 double saturate(double command, double saturation, bool ismax = true);
 double clamp(double x, double lo, double hi);
-
+Vector4d throttle2pwm(Eigen::Vector4d throttles);

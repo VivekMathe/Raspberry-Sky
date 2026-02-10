@@ -11,7 +11,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/src)
 
 add_executable(simulation ${myExec}/pathing_simulation.cpp)
 target_include_directories(simulation PUBLIC ${extlibs}/eigen)
-target_link_libraries(simulation PRIVATE gnclib)
+target_link_libraries(simulation PRIVATE gnclib drone_interface)
 
 add_executable(drone ${myExec}/gain_testing.cpp)
 target_include_directories(drone PUBLIC ${extlibs}/eigen)
@@ -20,3 +20,6 @@ target_link_libraries(drone PRIVATE gnclib)
 
 add_executable(throttle ${myExec}/throttle_pass.cpp)
 target_link_libraries(throttle PRIVATE thermal-camera Navio2)
+
+add_executable(FTS ${myExec}/fts_test.cpp)
+target_link_libraries(FTS PRIVATE drone_interface)

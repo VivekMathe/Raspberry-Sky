@@ -153,3 +153,7 @@ Vector10d Guidance::getTarget(Vector12d x)
 	//returns psides, omegades, pdes, vdes
 	return commands;
 }
+Vector3d Guidance::manualCommands(Eigen::Matrix<double, 6, 1> pwms)
+{
+	return Eigen::Matrix<double, 3, 1>::Zero();
+}

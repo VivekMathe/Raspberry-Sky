@@ -67,8 +67,10 @@ Vector4d Controller::achieveState(double psi_cmd, Vector3d omega_cmd, Vector3d p
 	return commands;
 }
 
-Vector4d Controller::manualControl(Vector3d v_cmd)
+Vector4d Controller::manualControl(Vector3d v_body_cmds)
 {
+	Matrix3d dcm = dcmI_B(control_state(0), control_state(1), control_state(2));
+	Vector3d v_cmd = dcm * v_body_cmds;
 	Vector3d outer_output = outer_achievePos(control_state.block(6,0,3,1), v_cmd);
 	Vector3d att_cmd;
 	att_cmd << outer_output(0), outer_output(1), control_state(2);

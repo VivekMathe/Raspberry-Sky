@@ -226,3 +226,10 @@ double clamp(double x, double lo, double hi)
 	}
 	return x;
 }
+
+Vector4d throttle2pwm(Eigen::Vector4d throttles)
+{
+	Eigen::Vector4d pwms = (throttles.array() + 1.0) * 1000;
+	return pwms;
+}
+
