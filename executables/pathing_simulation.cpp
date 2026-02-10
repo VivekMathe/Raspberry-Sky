@@ -138,7 +138,7 @@ int main() {
 	//recording data
 	std::ofstream outfile("sim_results.csv");
 	
-	outfile << "t,phi,phi_est,theta,theta_est,psi,psi_est,p,p_est,q,q_est,r,r_est,n,n_est,e,e_est,d,d_est,vn,vn_est,ve,ve_est,vd,vd_est" << std::endl;
+	outfile << "t,phi,phi_est,theta,theta_est,psi,psi_est,p,p_est,q,q_est,r,r_est,n,n_est,e,e_est,d,d_est,vn,vn_est,ve,ve_est,vd,vd_est" << '\n';
 	outfile << t << ',';
 	for (int l = 0; l < 12; l++)
 	{
@@ -150,7 +150,7 @@ int main() {
 		}
 		else
 		{
-			outfile << std::endl;
+			outfile << '\n';
 		}
 	}
 
@@ -194,7 +194,7 @@ int main() {
 			}
 			else
 			{
-				outfile << std::endl;
+				outfile << '\n';
 			}
 		}
 		//std::cout << "Specific thrust: " << specific_thrust << std::endl << "IMU: " << imu_accels << std::endl << "NEXT: " << std::endl;
