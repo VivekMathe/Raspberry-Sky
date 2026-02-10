@@ -6,7 +6,7 @@ IMUHandler::IMUHandler() {
     lsm.initialize();
 }
 
-Eigen::Matrix<float, 6, 1> IMUHandler::update() {
+Eigen::Matrix<double, 6, 1> IMUHandler::update() {
 
     lsm.update();
 

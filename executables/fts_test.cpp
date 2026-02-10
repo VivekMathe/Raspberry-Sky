@@ -14,7 +14,7 @@ constexpr int FEED_US = 20000;        // 20 ms update interval (50 Hz)
 int main()
 {
 	MotorDriver motordriver;
-	RCInput_Navio2 controller;
+	RCInputHandler controller;
 	while (true)
 	{
 		Eigen::Matrix<double, 6,1> ppm = controller.read_ppm_vector();

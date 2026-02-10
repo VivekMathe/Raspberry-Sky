@@ -1,7 +1,7 @@
 #ifndef IMUHANDLER_H
 #define IMUHANDLER_H
 
-#include "Navio/Navio2/LSM9DS1.h"
+#include "Navio2/LSM9DS1.h"
 #include <Eigen/Dense>
 
 class IMUHandler {
@@ -10,7 +10,7 @@ public:
     IMUHandler();
 
     // Reads sensor and returns 6x1 Eigen Matrix [ax, ay, az, gx, gy, gz]
-    Eigen::Matrix<float, 6, 1> update();
+    Eigen::Matrix<double, 6, 1> update();
 
 private:
     LSM9DS1 lsm;

@@ -1,25 +1,17 @@
 #pragma once
 
-#include <cstddef>
 #include <Eigen/Dense>
-#include <Navio2/RCInput_Navio2.h>
+#include <Navio2/RCInput_Navio2.h> 
 
-class RCInput_Navio2 : public RCInput
+// Renamed class to avoid collision
+// Inherit from RCInput_Navio2
+class RCInputHandler : public RCInput_Navio2
 {
 public:
-    // Constructor handles all file opening
-    RCInput_Navio2();
+    RCInputHandler();
 
-    // These must match the signatures in Common/RCInput.h exactly
-    void initialize() override;
-    int read(int ch) override;
-
-    // Your custom matrix function for the FlySky receiver
+    // Your custom matrix function
     Eigen::Matrix<double, 6, 1> read_ppm_vector();
 
-private:
-    int open_channel(int ch);
-
-    static const size_t CHANNEL_COUNT = 14;
-    int channels[CHANNEL_COUNT];
+    // We do NOT need to redeclare initialize() or read() or open_channel()
 };

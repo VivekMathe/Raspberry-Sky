@@ -95,12 +95,12 @@ int main() {
 
 	//MOTOR SETUP
 	MotorDriver motordriver;
-	RCInput_Navio2 rc_controller;
+	RCInputHandler rc_controller;
 
 
 	//These are derivatives and controls etc at initial state
-	Vector3d imu_omega;
-	Vector3d imu_accels;
+	Vector3d imu_omega; //read measurements from IMU
+	Vector3d imu_accels; //IMU
 	Vector4d controls;
 	Vector4d motor_cmds;
 	Vector4d forces;
@@ -109,8 +109,10 @@ int main() {
 	IMUHandler imu;
 	Eigen::Matrix<double,5,1> mocapData = readDatalink();
 	Eigen::Matrix<double, 6, 1> imu_data = imu.update();
-	Vector3d imu_omega; //read measurements from IMU
-	Vector3d imu_accels; //IMU
+
+	imu_accels = imu_data.head<3>();
+	imu_omega = imu_data.tail<3>();
+
 	Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
 	Vector12d x = ekf.getControlState();

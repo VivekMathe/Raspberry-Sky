@@ -1,32 +1,20 @@
 #include "RCInput.h"
 
-void RCInput_Navio2::initialize() {
-    // Left empty because logic is in the Constructor
-}
-
-RCInput_Navio2::RCInput_Navio2()
+RCInputHandler::RCInputHandler()
 {
-    // Initialisation of channels, opened channels
-
-    for (size_t i = 0; i < CHANNEL_COUNT; i++) {
-        channels[i] = open_channel(i);
-    }
+    // The base class RCInput_Navio2 constructor handles initialization automatically
+    this->initialize();
 }
 
-Eigen::Matrix<double, 6, 1> RCInput_Navio2::read_ppm_vector()
+Eigen::Matrix<double, 6, 1> RCInputHandler::read_ppm_vector()
 {
     Eigen::Matrix<double, 6, 1> pwm_matrix;
 
-    // Channel 0: v_east
-    // Channel 1: v_north
-    // Channel 2: Throttle. Power
-    // Channel 3: Rudder. 
-    // Channel 4: Aux Channel
-    // Channel 5: Aux Channel
-
+    // Channel Mapping:
+    // 0: v_east, 1: v_north, 2: Throttle, 3: Rudder, 4-5: Aux
     for (int i = 0; i < 6; ++i) {
+        // Call the read() method inherited from the base class
         int val = this->read(i);
-
         pwm_matrix(i) = val;
     }
 
