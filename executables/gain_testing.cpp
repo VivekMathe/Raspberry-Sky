@@ -177,14 +177,17 @@ int main() {
 		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
 		//COMMAND THE MOTORS
 
-		if (armed) //something from receiver
+		if (static_cast<int>(rc_data(5)) == 2000)
 		{
-			motordriver.command(throttle2pwm(motor_cmds));
+			motordriver.~MotorDriver();
 		}
 		else
 		{
-			break;
+			motordriver.command(throttle2pwm(motor_cmds));
 		}
+
+
+			
 	}
 
 	return 0;

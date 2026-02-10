@@ -155,16 +155,16 @@ Vector10d Guidance::getTarget(Vector12d x)
 }
 Vector4d Guidance::manualCommands(Eigen::Matrix<double, 6, 1> pwms)
 {
-	Vector4d pwms; //vn ve vd psi
-	pwms << pwms(1), pwms(0), pwms(2), pwms(3); 
+	Vector4d motor_pwms; //vn ve vd psi
+	motor_pwms << pwms(1), pwms(0), pwms(2), pwms(3); 
 	Vector4d commands;
-	commands = cruise * (pwms.array() - 1500) / 500;
+	commands = cruise * (motor_pwms.array() - 1500) / 500;
 	{
-		if (pwms(2) <= 1400)
+		if (motor_pwms(2) <= 1400)
 		{
 			commands(2) = cruise * 1 / 400 * (commands(2) - 1400);
 		}
-		else if (commands(2) < 1600)
+		else if (motor_pwms(2) < 1600)
 		{
 			commands(2) = 0;
 		}
