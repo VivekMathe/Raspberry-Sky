@@ -160,9 +160,8 @@ Vector12d get_dynamics(Vector12d x, Vector3d g, double m, Vector3d inertias, dou
 
 Vector12d noise12d()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::normal_distribution<double> dist(0.0, 1.0);
+	static std::mt19937 gen{std::random_device{}()};
+	static std::normal_distribution<double> dist{0.0, 1.0};
 	Vector12d noise;
 	for (int i = 0; i < 12; i++)
 	{
@@ -173,9 +172,8 @@ Vector12d noise12d()
 
 Vector3d noise3d()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::normal_distribution<double> dist(0.0, 1.0);
+	static std::mt19937 gen{std::random_device{}()};
+	static std::normal_distribution<double> dist{0.0, 1.0};
 	Vector3d noise;
 	for (int i = 0; i < 3; i++)
 	{
