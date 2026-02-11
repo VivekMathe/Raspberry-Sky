@@ -1,5 +1,4 @@
 #include "IMUHandler.h"
-#include <stdio.h>
 
 IMUHandler::IMUHandler() {
     // initialize() in LSM9DS1.cpp needs to be changed to low range settings
