@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <algorithm>
 #include "network.h"
 
 #define BSD_BASE_PORT 0
@@ -148,7 +149,7 @@ static int getaddr(struct sockaddr_in* ad, char* hostname, unsigned short port) 
         printf("getaddr: lookup of %s failed\n", hostname);
         return(-1);
     }
-    memcpy((char*)(&(ad->sin_addr)), hp->h_addr, hp->h_length);
+    std::copy(hp->h_addr, hp->h_addr + hp->h_length, reinterpret_cast<char*>(&ad->sin_addr));
     ad->sin_family = AF_INET;
     ad->sin_port = htons(port);
     return 0;
