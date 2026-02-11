@@ -143,7 +143,7 @@ static int getaddr(struct sockaddr_in* ad, char* hostname, unsigned short port) 
 
     struct hostent* hp;
 
-    memset(ad, 0, sizeof(struct sockaddr_in)); /* clear our address */
+    *ad = {}; /* clear our address */
     hp = gethostbyname(hostname);
     if (NULL == hp) {
         printf("getaddr: lookup of %s failed\n", hostname);
