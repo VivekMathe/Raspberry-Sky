@@ -26,7 +26,7 @@ bool MotorDriver::initialize() {
 
     // Arming sequence: ensure ESCs see low signal to initialize
     for (int pin : motor_pins) {
-        pwm_driver.set_duty_cycle(pin, (float)PWM_SAFE);
+        pwm_driver.set_duty_cycle(pin, static_cast<float>(PWM_SAFE));
     }
 
     calibrate();
@@ -43,7 +43,7 @@ void MotorDriver::calibrate() {
     // High Signal Max PWM
     for (int i = 0; i < loops; ++i) {
         for (int pin : motor_pins) {
-            pwm_driver.set_duty_cycle(pin, (float)PWM_MAX);
+            pwm_driver.set_duty_cycle(pin, static_cast<float>(PWM_MAX));
         }
         usleep(FEED_US);
     }
@@ -51,7 +51,7 @@ void MotorDriver::calibrate() {
     // Low Signal Min PWM
     for (int i = 0; i < loops; ++i) {
         for (int pin : motor_pins) {
-            pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
+            pwm_driver.set_duty_cycle(pin, static_cast<float>(PWM_MIN));
         }
         usleep(FEED_US);
     }
@@ -60,7 +60,7 @@ void MotorDriver::calibrate() {
 void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
     for (int i = 0; i < NUM_MOTORS; ++i) {
         // Clamp the double input and cast to float for the hardware driver
-        double commanded = std::clamp(pwm_values(i), (double)PWM_MIN, (double)PWM_MAX);
+        double commanded = std::clamp(pwm_values(i), static_cast<double>(PWM_MIN), static_cast<double>(PWM_MAX));
 
         pwm_driver.set_duty_cycle(motor_pins[i], static_cast<float>(commanded));
     }
@@ -69,7 +69,7 @@ void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
 void MotorDriver::wind_down() 
 {
     for (int pin : motor_pins) {
-        pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
+        pwm_driver.set_duty_cycle(pin, static_cast<float>(PWM_MIN));
     }
     usleep(50000);
 }
