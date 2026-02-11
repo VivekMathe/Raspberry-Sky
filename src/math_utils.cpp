@@ -48,9 +48,9 @@ Matrix15d jacobian(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d o
 { 
 	double eps = 1e-6;
 	Matrix15d A;
+	Vector15d dx;
 	for (int i = 0; i < 15; i++)
 	{
-		Vector15d dx;
 		dx.setZero();
 		dx(i) = eps;
 		A.col(i) = (get_xdot(x + dx, g, a_body_measured, omega) - get_xdot(x - dx, g, a_body_measured, omega)) / (2 * eps);
