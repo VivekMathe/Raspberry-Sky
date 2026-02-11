@@ -27,7 +27,7 @@ Matrix3d dcmI_B(double phi, double theta, double psi)
 ////////////////////////////
 ////EKF FUNCTIONS
 
-Vector15d get_xdot(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d omega)
+Vector15d get_xdot(const Vector15d& x, const Vector3d& g, const Vector3d& a_body_measured, const Vector3d& omega)
 {
 	//note that a_measured is the IMU measurement, as measured from the body frame. No gravity included, and still in body vectors.
 	//a_inertial_measured includes the correction due to off-cg IMU location, so it is a CG acceleration

@@ -18,7 +18,7 @@ using Matrix15d = Eigen::Matrix<double, 15, 15>;
 
 
 Matrix3d dcmI_B(double phi, double theta, double psi);
-Vector15d get_xdot(Vector15d x, Eigen::Vector3d g, Vector3d a_body_measured, Vector3d omega);
+Vector15d get_xdot(const Vector15d& x, const Vector3d& g, const Vector3d& a_body_measured, const Vector3d& omega);
 Vector12d get_dynamics(Vector12d x, Vector3d g, double m, Vector3d inertias, double thrust, Vector3d moments);
 Matrix15d jacobian(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d omega);
 Eigen::Matrix<double, 15, 12> noise_coupling(Vector15d x);
