@@ -2,8 +2,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include "math_utils.h"
-#include <iostream>
-using namespace std;
+
 Matrix3d dcmI_B(double phi, double theta, double psi)
 {
 	//This returns a DCM that goes from body frame to inertial
@@ -11,15 +10,15 @@ Matrix3d dcmI_B(double phi, double theta, double psi)
 	Matrix3d Y_rot;
 	Matrix3d X_rot;
 
-	Z_rot << cos(psi), -sin(psi), 0,
-		sin(psi), cos(psi), 0,
+	Z_rot << std::cos(psi), -std::sin(psi), 0,
+		std::sin(psi), std::cos(psi), 0,
 		0, 0, 1;
-	Y_rot << cos(theta), 0, sin(theta),
+	Y_rot << std::cos(theta), 0, std::sin(theta),
 		0, 1, 0,
-		-sin(theta), 0, cos(theta);
+		-std::sin(theta), 0, std::cos(theta);
 	X_rot << 1, 0, 0,
-		0, cos(phi), -sin(phi),
-		0, sin(phi), cos(phi);
+		0, std::cos(phi), -std::sin(phi),
+		0, std::sin(phi), std::cos(phi);
 
 	return Z_rot * Y_rot * X_rot;
 }
@@ -34,9 +33,9 @@ Vector15d get_xdot(const Vector15d& x, const Vector3d& g, const Vector3d& a_body
 	//x is expected to be attitude, pos, v, accel bias, gyro bias
 	Vector15d xdot;
 	Matrix3d T; //This is the transform from body rates to euler rates
-	T << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
-		0, cos(x(0)), -sin(x(0)),
-		0, sin(x(0)) / cos(x(1)), cos(x(0)) / cos(x(1));
+	T << 1, std::sin(x(0))* std::tan(x(1)), std::cos(x(0))* std::tan(x(1)),
+		0, std::cos(x(0)), -std::sin(x(0)),
+		0, std::sin(x(0)) / std::cos(x(1)), std::cos(x(0)) / std::cos(x(1));
 	xdot.block(0, 0, 3, 1) = T * omega;
 	xdot.block(3, 0, 3, 1) = x.block(6, 0, 3, 1);
 	xdot.block(6, 0, 3, 1) = dcmI_B(x(0), x(1), x(2)) * a_body_measured + g;
@@ -60,9 +59,9 @@ Matrix15d jacobian(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d o
 Eigen::Matrix<double, 15, 12> noise_coupling(Vector15d x)
 {
 	Matrix3d T;
-	T << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
-		0, cos(x(0)), -sin(x(0)),
-		0, sin(x(0)) / cos(x(1)), cos(x(0)) / cos(x(1));
+	T << 1, std::sin(x(0))* std::tan(x(1)), std::cos(x(0))* std::tan(x(1)),
+		0, std::cos(x(0)), -std::sin(x(0)),
+		0, std::sin(x(0)) / std::cos(x(1)), std::cos(x(0)) / std::cos(x(1));
 
 	Eigen::Matrix<double,15,12> G = Eigen::Matrix<double,15,12>::Zero();
 	G.block(0, 0, 3, 3) = T;
@@ -128,9 +127,9 @@ Vector12d get_dynamics(Vector12d x, Vector3d g, double m, Vector3d inertias, dou
 	double Iz = inertias(2);
 	
 	Matrix3d to_euler; //This is the transform from body rates to euler rates
-	to_euler << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
-		0, cos(x(0)), -sin(x(0)),
-		0, sin(x(0)) / cos(x(1)), cos(x(0)) / cos(x(1));
+	to_euler << 1, std::sin(x(0))* std::tan(x(1)), std::cos(x(0))* std::tan(x(1)),
+		0, std::cos(x(0)), -std::sin(x(0)),
+		0, std::sin(x(0)) / std::cos(x(1)), std::cos(x(0)) / std::cos(x(1));
 	Vector12d xdot;
 	Vector3d forces;
 	forces << 0, 0, -thrust;
