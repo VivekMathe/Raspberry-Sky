@@ -24,12 +24,12 @@ bool MotorDriver::initialize() {
         pwm_driver.enable(pin);
     }
 
+    calibrate();
+
     // Arming sequence: ensure ESCs see low signal to initialize
     for (int pin : motor_pins) {
         pwm_driver.set_duty_cycle(pin, (float)PWM_SAFE);
     }
-
-    calibrate();
 
     usleep(50000);
     return true;
