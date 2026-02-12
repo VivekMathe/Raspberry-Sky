@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 
-Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double yaw_rate, double takeoff, double pgain, double vgain)
+Guidance::Guidance(const Vector12d& x, const Vector2d& n_bounds, const Vector2d& e_bounds, int numpasses, double cruise_speed, double yaw_rate, double takeoff, double pgain, double vgain)
 {
 	x0 = x;
 	phase = 1;
@@ -25,7 +25,7 @@ Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpas
 	{
 		lawnmower_stripes(i) = ebounds(0) + fov / 4 + i * delta_e; 
 	}
-	std::cout << "All planned stripes: " << std::endl << lawnmower_stripes << std::endl;
+	std::cout << "All planned stripes: " << "\n" << lawnmower_stripes << "\n";
 	((lawnmower_stripes.array() - x(7)).cwiseAbs()).minCoeff(&stripe_index); //initializing stripe 
 	Kp = pgain;
 	Kd = vgain;
@@ -34,7 +34,7 @@ Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpas
 	//north is to the right, east is up. Stripes will be along east. 
 }
 
-Vector10d Guidance::getTarget(Vector12d x)
+Vector10d Guidance::getTarget(const Vector12d& x)
 {
 	Vector10d commands;
 	double psides;
@@ -58,7 +58,7 @@ Vector10d Guidance::getTarget(Vector12d x)
 
 			//done with takeoff, this is now initializing the search pattern
 			phase += 1;
-			std::cout << "Takeoff completed, beginning search" << std::endl;
+			std::cout << "Takeoff completed, beginning search" << "\n";
 			Eigen::Index minIndex;
 			((ebounds.array() - x(7)).cwiseAbs()).minCoeff(&minIndex); //finding nearest stripe
 			if (minIndex == 0)
@@ -98,11 +98,11 @@ Vector10d Guidance::getTarget(Vector12d x)
 				{
 					edir = -edir;
 				}
-				std::cout << "OLD stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl;
+				std::cout << "OLD stripe:" << "\n" << lawnmower_stripes(stripe_index) << "\n";
 				stripe_index += edir; //move to next stripe
 				target_e = lawnmower_stripes(stripe_index);
-				std::cout << "NEW stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl;
-				std::cout << "POS" << std::endl << x.block(6, 0, 2, 1) << std::endl;
+				std::cout << "NEW stripe:" << "\n" << lawnmower_stripes(stripe_index) << "\n";
+				std::cout << "POS" << "\n" << x.block(6, 0, 2, 1) << "\n";
 
 			}
 		}
@@ -154,7 +154,7 @@ Vector10d Guidance::getTarget(Vector12d x)
 	//returns psides, omegades, pdes, vdes
 	return commands;
 }
-Vector4d Guidance::manualCommands(Eigen::Matrix<double, 6, 1> pwms)
+Vector4d Guidance::manualCommands(const Eigen::Matrix<double, 6, 1>& pwms)
 {
 	Vector4d motor_pwms; //psirate vn ve vd 
 	motor_pwms << pwms(3), pwms(1), pwms(0), pwms(2);

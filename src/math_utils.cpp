@@ -27,7 +27,7 @@ Matrix3d dcmI_B(double phi, double theta, double psi)
 ////////////////////////////
 ////EKF FUNCTIONS
 
-Vector15d get_xdot(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d omega)
+Vector15d get_xdot(const Vector15d& x, const Vector3d& g, const Vector3d& a_body_measured, const Vector3d& omega)
 {
 	//note that a_measured is the IMU measurement, as measured from the body frame. No gravity included, and still in body vectors.
 	//a_inertial_measured includes the correction due to off-cg IMU location, so it is a CG acceleration
@@ -44,7 +44,7 @@ Vector15d get_xdot(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d o
 	return xdot;
 }
 
-Matrix15d jacobian(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d omega)
+Matrix15d jacobian(const Vector15d& x, const Vector3d& g, const Vector3d& a_body_measured, const Vector3d& omega)
 { 
 	double eps = 1e-6;
 	Matrix15d A;
@@ -57,7 +57,7 @@ Matrix15d jacobian(Vector15d x, Vector3d g, Vector3d a_body_measured, Vector3d o
 	}
 	return A;
 }
-Eigen::Matrix<double, 15, 12> noise_coupling(Vector15d x)
+Eigen::Matrix<double, 15, 12> noise_coupling(const Vector15d& x)
 {
 	Matrix3d T;
 	T << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
@@ -76,7 +76,7 @@ Eigen::Matrix<double, 15, 12> noise_coupling(Vector15d x)
 //////////////////
 //Simulator functions
 
-Vector3d sim_imu_accels(Vector12d x_true, Vector3d commanded_body_accel, Vector3d alpha, Vector3d r, Vector3d imunoise)
+Vector3d sim_imu_accels(const Vector12d& x_true, const Vector3d& commanded_body_accel, const Vector3d& alpha, const Vector3d& r, const Vector3d& imunoise)
 {
 	//x_true is attitude, body rates, pos, v
 	// commanded_body_accels is true non-gravity acceleration in the body frame, at the COM of the object. Essentially, for quadrotor, specific thrust. 
@@ -105,18 +105,18 @@ Vector3d sim_imu_accels(Vector12d x_true, Vector3d commanded_body_accel, Vector3
 
 	return a_measured;
 }
-Vector3d sim_gyro_rates(Vector12d x_true, Vector3d gyronoise)
+Vector3d sim_gyro_rates(const Vector12d& x_true, const Vector3d& gyronoise)
 {
 	return x_true.block(3, 0, 3, 1) + gyronoise;
 }
 
-Vector3d sim_measurement(Vector3d x_true_measured, Vector3d m_noise)
+Vector3d sim_measurement(const Vector3d& x_true_measured, const Vector3d& m_noise)
 {
 	return x_true_measured + m_noise;
 }
 
 //GET DYNAMICS DOES NOT USE THE SAME STATES AS EKF. get_xdot is for the KALMAN FILTER. This is for propagating true 12d state: attitude, body rates, pos, vel
-Vector12d get_dynamics(Vector12d x, Vector3d g, double m, Vector3d inertias, double thrust, Vector3d moments)
+Vector12d get_dynamics(const Vector12d& x, const Vector3d& g, double m, const Vector3d& inertias, double thrust, const Vector3d& moments)
 {
 	//x = phi theta psi, p q r, n e d, vn ve vd, 
 	//xdot = euler_rates, omegadot, vn ve vd, an ae ad, 
@@ -160,9 +160,8 @@ Vector12d get_dynamics(Vector12d x, Vector3d g, double m, Vector3d inertias, dou
 
 Vector12d noise12d()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::normal_distribution<double> dist(0.0, 1.0);
+	static std::mt19937 gen(std::random_device{}());
+	static std::normal_distribution<double> dist(0.0, 1.0);
 	Vector12d noise;
 	for (int i = 0; i < 12; i++)
 	{
@@ -173,9 +172,8 @@ Vector12d noise12d()
 
 Vector3d noise3d()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::normal_distribution<double> dist(0.0, 1.0);
+	static std::mt19937 gen(std::random_device{}());
+	static std::normal_distribution<double> dist(0.0, 1.0);
 	Vector3d noise;
 	for (int i = 0; i < 3; i++)
 	{

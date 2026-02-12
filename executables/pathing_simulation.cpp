@@ -76,6 +76,7 @@ int main() {
 		-d_arm * Kt, -d_arm * Kt, d_arm* Kt, d_arm* Kt,
 		d_arm* Kt, -d_arm * Kt, -d_arm * Kt, d_arm* Kt,
 		Kq, -Kq, Kq, -Kq;
+	Matrix4d mixer_inverse = mixer.inverse();
 	//1 2
 	//4 3 motor config
 	//1 and 3 ccw, 2 and 4 are cw
@@ -86,9 +87,9 @@ int main() {
 	Vector3d sigmav;
 	sigmav << .001, .001, .001; //n,e,d
 	Vector12d w;
-	w = noise12d().asDiagonal() * sigmaw; 
+	w = noise12d().cwiseProduct(sigmaw); 
 	Vector3d v;
-	v = noise3d().asDiagonal() * sigmav;
+	v = noise3d().cwiseProduct(sigmav);
 	Vector3d accel_bias;
 	accel_bias.setZero();
 	Vector3d gyro_bias;
@@ -119,7 +120,7 @@ int main() {
 	//These are derivatives and controls etc at initial state
 	Vector10d commands = guidance.getTarget(x);
 	Vector4d controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1));
-	Vector4d motor_cmds = mixer.inverse() * controls;
+	Vector4d motor_cmds = mixer_inverse * controls;
 	motor_cmds = (motor_cmds.array().min(1)).max(0);
 	Vector4d forces = mixer * motor_cmds;
 	Vector3d specific_thrust;
@@ -127,18 +128,18 @@ int main() {
 	specific_thrust = specific_thrust / m;
 	Vector12d xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1));
 
-	std::cout << "Simulation has begun" << std::endl;
-	std::cout << "Initial controller state estimate: " << x << std::endl;
-	std::cout << "Initial true state: " << x_true << std::endl;
-	std::cout << "Initial measurement: " << measurement << std::endl;
-	std::cout << "Initial IMU (omega, accels):" << imu_omega << std::endl << imu_accels << std::endl;
-	std::cout << "Initial motor commands: " << motor_cmds << std::endl;
+	std::cout << "Simulation has begun" << '\n';
+	std::cout << "Initial controller state estimate: " << x << "\n";
+	std::cout << "Initial true state: " << x_true << "\n";
+	std::cout << "Initial measurement: " << measurement << "\n";
+	std::cout << "Initial IMU (omega, accels):" << imu_omega << "\n" << imu_accels << "\n";
+	std::cout << "Initial motor commands: " << motor_cmds << "\n";
 
 
 	//recording data
 	std::ofstream outfile("sim_results.csv");
 	
-	outfile << "t,phi,phi_est,theta,theta_est,psi,psi_est,p,p_est,q,q_est,r,r_est,n,n_est,e,e_est,d,d_est,vn,vn_est,ve,ve_est,vd,vd_est" << std::endl;
+	outfile << "t,phi,phi_est,theta,theta_est,psi,psi_est,p,p_est,q,q_est,r,r_est,n,n_est,e,e_est,d,d_est,vn,vn_est,ve,ve_est,vd,vd_est" << "\n";
 	outfile << t << ',';
 	for (int l = 0; l < 12; l++)
 	{
@@ -150,10 +151,10 @@ int main() {
 		}
 		else
 		{
-			outfile << std::endl;
+			outfile << "\n";
 		}
 	}
-
+	
 	auto t_ref = std::chrono::system_clock::now(); //main loop clock
 	for (int k =1; k < 120*freq+1; k++)
 	{
@@ -161,13 +162,13 @@ int main() {
 		x_true += xdot * deltat;
 
 		//take new measurements
-		w = noise12d().asDiagonal() * sigmaw;
+		w = noise12d().cwiseProduct(sigmaw);
 		imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
 		imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3,0,3,1), r, w.block(3, 0, 3, 1));
 		//estimate
 		ekf.estimate(deltat); 
 		ekf.imureading(imu_omega, imu_accels,deltat);
-		v = noise3d().asDiagonal() * sigmav;
+		v = noise3d().cwiseProduct(sigmav);
 		truth_measured << x_true(6), x_true(7), x_true(8);
 		measurement = sim_measurement(truth_measured, v);
 		ekf.update(measurement);
@@ -195,15 +196,15 @@ int main() {
 			}
 			else
 			{
-				outfile << std::endl;
+				outfile << "\n";
 			}
 		}
-		//std::cout << "Specific thrust: " << specific_thrust << std::endl << "IMU: " << imu_accels << std::endl << "NEXT: " << std::endl;
-		//std::cout << "Measurement: " << measurement << std::endl << "Actual: " << truth_measured << std::endl;
+		//std::cout << "Specific thrust: " << specific_thrust << "\n" << "IMU: " << imu_accels << "\n" << "NEXT: " << "\n";
+		//std::cout << "Measurement: " << measurement << "\n" << "Actual: " << truth_measured << "\n";
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - t_ref);
-	std::cout << seconds.count() << std::endl << (120*freq+1)/seconds.count(); //main loop clock
+	std::cout << seconds.count() << "\n" << (120*freq+1)/seconds.count(); //main loop clock
 
 	outfile.close();
 	return 0;

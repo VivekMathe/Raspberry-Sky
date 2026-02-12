@@ -136,23 +136,22 @@ int main() {
 	{
 		//WAIT FUNCTION TO PAD THE .01 seconds.
 		auto current_time = std::chrono::system_clock::now();
-		double dt = std::chrono::duration<double>(current_time - process_t).count();
-		if (dt >= 1 / process_freq)
+		auto dt = std::chrono::duration_cast<std::chrono::seconds>(current_time - process_t);
+		if (dt.count() >= 1 / process_freq)
 		{
-			ekf.estimate(dt); //predict state at current time step
+			ekf.estimate(dt.count()); //predict state at current time step
 			imu_data = imu.update();
 			imu_omega = imu_data.block(0, 0, 3, 1);
 			imu_accels = imu_data.block(3, 0, 3, 1);
 			current_time = std::chrono::system_clock::now();
-			dt = std::chrono::duration<double>(current_time - process_t).count(); //remeasuring time just to be accurate. Prolly unecessary 
-			ekf.imureading(imu_omega, imu_accels, dt);
+			ekf.imureading(imu_omega, imu_accels, dt.count());
 			process_t = current_time;
 		}
 
 		//there will be some time lag between the ekf estimate and the measurement update, but this should be small enough to ignore
 		current_time = std::chrono::system_clock::now();
-		dt = std::chrono::duration<double>(current_time - measurement_t).count();
-		if (dt >= 1 / m_freq) // 5th value in mocapData matrix is valid bit
+		dt = std::chrono::duration_cast<std::chrono::seconds>(current_time - measurement_t);
+		if (dt.count() >= 1 / m_freq) // 5th value in mocapData matrix is valid bit
 		{
 			Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
 			if (opti_data(4) == true) //if valid

@@ -43,4 +43,5 @@ out/
 external/
 testing/
 ext_libs/
+build/
 *.vs

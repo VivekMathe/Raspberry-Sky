@@ -3,7 +3,7 @@
 #include "math_utils.h"
 #include <cmath>
 #include <algorithm>
-Controller::Controller(Vector3d outer_Kp, Vector3d outer_Kd, Vector3d inner_Kp, Vector3d inner_Kd, std::pair<double, double> thrust_sat,
+Controller::Controller(const Vector3d& outer_Kp, const Vector3d& outer_Kd, const Vector3d& inner_Kp, const Vector3d& inner_Kd, std::pair<double, double> thrust_sat,
 	std::pair<double, double> acc_sat, double angle_maximum, double mass)
 {
 	pos_Kp = outer_Kp;
@@ -18,13 +18,13 @@ Controller::Controller(Vector3d outer_Kp, Vector3d outer_Kd, Vector3d inner_Kp, 
 	m = mass;
 }
 
-void Controller::update(Vector12d x) 
+void Controller::update(const Vector12d& x) 
 {
 	control_state = x;
 }
 
 
-Vector3d Controller::outer_achievePos(Vector3d p_des, Vector3d v_des)
+Vector3d Controller::outer_achievePos(const Vector3d& p_des, const Vector3d& v_des)
 {
 	//outer loop
 	Vector3d e_pos = p_des - control_state.block(6, 0, 3, 1);
@@ -48,7 +48,7 @@ Vector3d Controller::outer_achievePos(Vector3d p_des, Vector3d v_des)
 	return output;
 }
 
-Vector3d Controller::inner_achieveAtt(Vector3d att_cmd, Vector3d omega_cmd)
+Vector3d Controller::inner_achieveAtt(const Vector3d& att_cmd, const Vector3d& omega_cmd)
 {
 	Vector3d e_att = att_cmd - control_state.block(0, 0, 3, 1);
 	Vector3d e_omega = omega_cmd - control_state.block(3, 0, 3, 1);
@@ -56,7 +56,7 @@ Vector3d Controller::inner_achieveAtt(Vector3d att_cmd, Vector3d omega_cmd)
 	return moments;
 }
 
-Vector4d Controller::achieveState(double psi_cmd, Vector3d omega_cmd, Vector3d p_cmd, Vector3d v_cmd) //returns T L M N
+Vector4d Controller::achieveState(double psi_cmd, const Vector3d& omega_cmd, const Vector3d& p_cmd, const Vector3d& v_cmd) //returns T L M N
 {
 	Vector3d outer_output = outer_achievePos(p_cmd, v_cmd);
 	Vector3d att_cmd;
@@ -67,7 +67,7 @@ Vector4d Controller::achieveState(double psi_cmd, Vector3d omega_cmd, Vector3d p
 	return commands;
 }
 
-Vector4d Controller::manualControl(Vector4d cmds)
+Vector4d Controller::manualControl(const Vector4d& cmds)
 {
 	//cmds is yawrate vn ve vd
 	Matrix3d dcm = dcmI_B(control_state(0), control_state(1), control_state(2));

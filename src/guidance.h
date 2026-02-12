@@ -24,8 +24,8 @@ private:
 	double Kd;
 	Eigen::VectorXd lawnmower_stripes;
 public:
-	Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double yaw_rate, double takeoff, double pgain, double vgain);
-	Vector10d getTarget(Vector12d x);
-	Vector4d manualCommands(Eigen::Matrix<double,6,1>);
+	Guidance::Guidance(const Vector12d& x, const Vector2d& n_bounds, const Vector2d& e_bounds, int numpasses, double cruise_speed, double yaw_rate, double takeoff, double pgain, double vgain);
+	Vector10d getTarget(const Vector12d& x);
+	Vector4d manualCommands(const Eigen::Matrix<double, 6, 1>& pwms);
 };
 
