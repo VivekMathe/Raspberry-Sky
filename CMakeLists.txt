@@ -10,11 +10,14 @@ add_subdirectory(${extlibs}/Navio2)
 add_subdirectory(${CMAKE_SOURCE_DIR}/src)
 
 add_executable(simulation ${myExec}/pathing_simulation.cpp)
-target_include_directories(simulation PUBLIC ${extlibs}/eigen)
+target_compile_options(simulation PRIVATE
+    $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>
+)
+target_include_directories(simulation PRIVATE ${extlibs}/eigen)
 target_link_libraries(simulation PRIVATE gnclib)
 
 add_executable(drone ${myExec}/gain_testing.cpp)
-target_include_directories(drone PUBLIC ${extlibs}/eigen)
+target_include_directories(drone PRIVATE ${extlibs}/eigen)
 target_link_libraries(drone PRIVATE gnclib drone_interface)
 
 
@@ -23,3 +26,4 @@ target_link_libraries(throttle PRIVATE MLX90640_API Navio2)
 
 add_executable(FTS ${myExec}/fts_test.cpp)
 target_link_libraries(FTS PRIVATE drone_interface)
+

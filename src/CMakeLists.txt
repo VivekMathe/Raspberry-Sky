@@ -10,6 +10,9 @@ target_include_directories(gnclib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 	${extlibs}/eigen
 )
+target_compile_options(gnclib PRIVATE
+    $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>
+)
 
 set(interface_sources
 ${CMAKE_CURRENT_SOURCE_DIR}/network.cpp

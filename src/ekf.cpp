@@ -21,6 +21,7 @@ EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav)
 	H.block(0, 3, 3, 3) = Matrix3d::Identity();
 	G.setZero();
 	K.setZero();
+
 }
 
 void EKF::initialize(const Vector3d& measurement, const Vector3d& gyro0, const Vector3d& accel0, const Vector3d& bias_accel, const Vector3d& bias_gyro) //set up initial states. Initial measurement, per se
@@ -33,23 +34,27 @@ void EKF::initialize(const Vector3d& measurement, const Vector3d& gyro0, const V
 }
 void EKF::imureading(const Vector3d& omega, const Vector3d& new_imu_accels, double dt)
 {
-	Vector3d alpha_raw = (omega - omega_measured) / dt;//updating our rates and accelerations for the next prediction 
+	Vector3d alpha_raw;
+	alpha_raw = (omega - omega_measured) / dt;//updating our rates and accelerations for the next prediction 
 	alpha = alpha * .7 + (1.0 - .7) * alpha_raw;
-	alpha = alpha_raw; //for testing
-	omega_measured = omega - x.block(12,0,3,1); //updating the process model measurements for the next step
-	body_accels = new_imu_accels - x.block(9, 0, 3, 1);
+	//alpha = alpha_raw;  testing
+	omega_measured = omega; //updating the process model measurements for the next step
+	body_accels = new_imu_accels;
 }
 
 void EKF::estimate(double dt) 
 {
 	//correct body_accels to be acting on CG. Rigid body means that omega isn't impacted
-	Vector3d com_body_accels =  body_accels + alpha.cross(-radius) + omega_measured.cross(omega_measured.cross(-radius)); //moving imu stuff to COM
+	Vector3d com_body_accels = body_accels + alpha.cross(-radius) + omega_measured.cross(omega_measured.cross(-radius)); //moving imu stuff to COM
 	//everything here uses the prior omega, body_accels from previous timestep. 
 	Vector15d xdot = get_xdot(x, g, com_body_accels, omega_measured);
 	A = jacobian(x, g, com_body_accels, omega_measured);
-	G = noise_coupling(x); 
+	G = noise_coupling(x);
 	x = x + xdot * dt; //euler integration
-	Matrix15d pdot = A * P + P * A.transpose() + G*Q*G.transpose();
+	Matrix15d pdot;
+	Matrix15d AP;
+	AP.noalias() = A * P;
+	pdot.noalias() = AP + AP.transpose() + G * Q * G.transpose();
 	P = P + pdot * dt; //euler integration
 	P = (P + P.transpose()) / 2.0; //enforcing symmetry 
 	//std::cout <<"Velocity derivative: " << std::endl << get_xdot(x, g, com_body_accels, omega_measured).block(6, 0, 3, 1) << std::endl << "Body accels: " << std::endl << com_body_accels << std::endl;
@@ -58,11 +63,16 @@ void EKF::estimate(double dt)
 void EKF::update(const Vector3d& m)
 {
 	//incorporate a measurement model measurement into state estimate
-	Vector3d res = m - H * x; //calculating residual
-	K = P * H.transpose() * (H * P * H.transpose() + R).ldlt().solve(Matrix3d::Identity());;
+	Vector3d res;
+
+	res.noalias()  = m - H * x; //calculating residual
+	Eigen::Matrix<double,15,3> PHt;
+	PHt.noalias() = P * H.transpose();
+	K.noalias() = PHt * (H * PHt + R).ldlt().solve(Matrix3d::Identity());;
+	Matrix15d KH;
+	KH.noalias() = K * H;
 	x = x + K * res; //incorporating residual via kalman gain
-	Matrix15d I15d = Matrix15d::Identity();
-	P = (I15d - K * H) * P * (I15d - K * H).transpose() + K * R * K.transpose();
+	P = (I15d - KH) * P * (I15d - KH).transpose() + K * R * K.transpose();
 	//P = (P + P.transpose()) / 2.0;
 	x(0) = wrapPi(x(0)); //ensuring angles are staying within -pi to pi
 	x(1) = wrapPi(x(1));

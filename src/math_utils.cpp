@@ -6,56 +6,114 @@
 using namespace std;
 Matrix3d dcmI_B(double phi, double theta, double psi)
 {
-	//This returns a DCM that goes from body frame to inertial
-    Matrix3d Z_rot;
-	Matrix3d Y_rot;
-	Matrix3d X_rot;
+	Matrix3d dcm;
+	double cphi = cos(phi);
+	double sphi = sin(phi);
+	double ctheta = cos(theta);
+	double stheta = sin(theta);
+	double cpsi = cos(psi);
+	double spsi = sin(psi);
 
-	Z_rot << cos(psi), -sin(psi), 0,
-		sin(psi), cos(psi), 0,
-		0, 0, 1;
-	Y_rot << cos(theta), 0, sin(theta),
-		0, 1, 0,
-		-sin(theta), 0, cos(theta);
-	X_rot << 1, 0, 0,
-		0, cos(phi), -sin(phi),
-		0, sin(phi), cos(phi);
+	dcm << cpsi * ctheta,
+		cpsi* stheta* sphi - spsi * cphi,
+		cpsi* stheta* cphi + spsi * sphi,
 
-	return Z_rot * Y_rot * X_rot;
+		spsi* ctheta,
+		spsi* stheta* sphi + cpsi * cphi,
+		spsi* stheta* cphi - cpsi * sphi,
+
+		-stheta,
+		ctheta* sphi,
+		ctheta* cphi;
+
+	return dcm;
 }
 
 ////////////////////////////
-////EKF FUNCTIONS
+////EKF FUNCTIONS 
 
 Vector15d get_xdot(const Vector15d& x, const Vector3d& g, const Vector3d& a_body_measured, const Vector3d& omega)
 {
 	//note that a_measured is the IMU measurement, as measured from the body frame. No gravity included, and still in body vectors.
-	//a_inertial_measured includes the correction due to off-cg IMU location, so it is a CG acceleration
 	//x is expected to be attitude, pos, v, accel bias, gyro bias
 	Vector15d xdot;
 	Matrix3d T; //This is the transform from body rates to euler rates
 	T << 1, sin(x(0))* tan(x(1)), cos(x(0))* tan(x(1)),
 		0, cos(x(0)), -sin(x(0)),
 		0, sin(x(0)) / cos(x(1)), cos(x(0)) / cos(x(1));
-	xdot.block(0, 0, 3, 1) = T * omega;
+	xdot.block(0, 0, 3, 1) = T * (omega - x.block(12,0,3,1)); //subtracting bias
 	xdot.block(3, 0, 3, 1) = x.block(6, 0, 3, 1);
-	xdot.block(6, 0, 3, 1) = dcmI_B(x(0), x(1), x(2)) * a_body_measured + g;
+	xdot.block(6, 0, 3, 1) = dcmI_B(x(0), x(1), x(2)) * (a_body_measured-x.block(9,0,3,1)) + g; //subtracting bias
 	xdot.block(9,0,6,1) = Eigen::Matrix<double, 6, 1>::Zero();
 	return xdot;
 }
 
 Matrix15d jacobian(const Vector15d& x, const Vector3d& g, const Vector3d& a_body_measured, const Vector3d& omega)
 { 
-	double eps = 1e-6;
 	Matrix15d A;
-	for (int i = 0; i < 15; i++)
-	{
-		Vector15d dx;
-		dx.setZero();
-		dx(i) = eps;
-		A.col(i) = (get_xdot(x + dx, g, a_body_measured, omega) - get_xdot(x - dx, g, a_body_measured, omega)) / (2 * eps);
-	}
+	//generally, the attitude derivates are complex, rest are either 0 or 1
+	A.setZero();
+
+	double phi = x(0);
+	double theta = x(1);
+	double psi = x(2);
+
+	// Cache trig
+	double cphi = cos(phi);
+	double sphi = sin(phi);
+	double ctheta = cos(theta);
+	double stheta = sin(theta);
+	double t_theta = stheta / ctheta;  
+	double cpsi = cos(psi);
+	double spsi = sin(psi);
+
+	//attitude derivatives
+	A.block(0, 0, 1, 3) << omega(1) * cphi * t_theta - omega(2) * sphi * t_theta,
+		(omega(1) * sphi + omega(2) * cphi) / (ctheta * ctheta), 0; //phi
+	A.block(1, 0, 1, 3) << -omega(1) * sphi - omega(2) * cphi, 0, 0;//theta
+	A.block(2, 0, 1, 3) << omega(1) * cphi / ctheta - omega(2) * sphi / ctheta,
+		omega(1)* sphi / ctheta * t_theta + omega(2) * cphi / ctheta * t_theta, 0; // psi
+
+	A.block(0, 12, 3, 3) << -1, -sphi * t_theta, -cphi * t_theta,
+		0, -cphi, sphi,
+		0, -sphi / ctheta, -cphi / ctheta; //gyro bias
+
+	//dposdot/datt = 0
+	Matrix3d storage; //used to store stuff for calcs, reused over and over
+
+	//dVdot/datt
+
+	//dVdot/dphi
+	storage << 0, cpsi* stheta* cphi + spsi * sphi, -cpsi * stheta * sphi + spsi * cphi,
+		0, spsi* stheta* cphi - cpsi * sphi, -spsi * stheta * sphi - cpsi * cphi,
+		0, ctheta* cphi, -ctheta * sphi;
+	A.block(6, 0, 3, 1) = storage * a_body_measured;
+
+	storage << -cpsi * stheta, cpsi* ctheta* sphi, cpsi* ctheta* cphi,
+		-spsi * stheta, spsi* ctheta* sphi, spsi* ctheta* cphi,
+		-ctheta, -stheta * sphi, -stheta * cphi;
+	A.block(6, 1, 3, 1) = storage * a_body_measured;
+
+	storage << -spsi * ctheta, -spsi * stheta * sphi - cpsi * cphi, -spsi * stheta * cphi + cpsi * sphi,
+		cpsi* ctheta, cpsi* stheta* sphi - spsi * cphi, cpsi* stheta* cphi + spsi * sphi,
+		0, 0, 0;
+	A.block(6, 2, 3, 1) = storage * a_body_measured;
+
+	//dv/dbias
+	A.block(6, 9, 3, 3) << -cpsi * ctheta, -cpsi * stheta * sphi - spsi * cphi, -cpsi * stheta * sphi + spsi * sphi,
+		-spsi * ctheta, -spsi * stheta * sphi + cpsi * cphi, -spsi * stheta * cphi - cpsi * sphi,
+		stheta, -ctheta * sphi, -ctheta * cphi;
+
+	//Done with attitudes. n e d partials are trivial. Only thing left is a few ones
+	A(3, 6) = 1;
+	A(4, 7) = 1;
+	A(5, 8) = 1;
+
+
 	return A;
+
+
+
 }
 Eigen::Matrix<double, 15, 12> noise_coupling(const Vector15d& x)
 {
@@ -96,9 +154,10 @@ Vector3d sim_imu_accels(const Vector12d& x_true, const Vector3d& commanded_body_
 		
 		double k_ground = 1000; // spring-like constant
 		double b_ground = 50;   // damping
-		Vector3d off_cg_inertial = dcmI_B(x_true(0), x_true(1), x_true(2)) * off_cg_accels;
+		Vector3d off_cg_inertial;
+		off_cg_inertial.noalias() = dcmI_B(x_true(0), x_true(1), x_true(2)) * off_cg_accels;
 		off_cg_inertial(2) += -k_ground * penetration - b_ground * x_true(11);
-		off_cg_accels = dcmI_B(x_true(0), x_true(1), x_true(2)).transpose() * off_cg_inertial; //gravity not subtracted because it is never added in the first place
+		off_cg_accels.noalias() = dcmI_B(x_true(0), x_true(1), x_true(2)).transpose() * off_cg_inertial; //gravity not subtracted because it is never added in the first place
 	}
 	
 	Vector3d a_measured = off_cg_accels + imunoise;

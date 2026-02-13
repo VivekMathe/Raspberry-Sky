@@ -138,7 +138,7 @@ int main() {
 
 	//recording data
 	std::ofstream outfile("sim_results.csv");
-	
+
 	outfile << "t,phi,phi_est,theta,theta_est,psi,psi_est,p,p_est,q,q_est,r,r_est,n,n_est,e,e_est,d,d_est,vn,vn_est,ve,ve_est,vd,vd_est" << "\n";
 	outfile << t << ',';
 	for (int l = 0; l < 12; l++)
@@ -185,26 +185,31 @@ int main() {
 		specific_thrust << 0, 0, -forces(0);
 		specific_thrust = specific_thrust / m;
 		xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1)); //true state derivative
-		outfile << t << ',';
-		for (int l = 0; l < 12; l++)
+		/*
+		if (k % 10 == 0)
 		{
-			outfile << x_true(l) << ',' << x(l);
+			outfile << t << ',';
+			for (int l = 0; l < 12; l++)
+			{
+				outfile << x_true(l) << ',' << x(l);
 
-			if (l != 11)
-			{
-				outfile << ',';
-			}
-			else
-			{
-				outfile << "\n";
+				if (l != 11)
+				{
+					outfile << ',';
+				}
+				else
+				{
+					outfile << "\n";
+				}
 			}
 		}
+		*/
 		//std::cout << "Specific thrust: " << specific_thrust << "\n" << "IMU: " << imu_accels << "\n" << "NEXT: " << "\n";
 		//std::cout << "Measurement: " << measurement << "\n" << "Actual: " << truth_measured << "\n";
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
-	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - t_ref);
-	std::cout << seconds.count() << "\n" << (120*freq+1)/seconds.count(); //main loop clock
+	auto seconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - t_ref);
+	std::cout << seconds.count()/1000.0 << "\n" << (120*freq+1)/seconds.count()*1000.0; //main loop clock
 
 	outfile.close();
 	return 0;
