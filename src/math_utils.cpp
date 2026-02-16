@@ -159,7 +159,6 @@ Vector3d sim_imu_accels(const Vector12d& x_true, const Vector3d& commanded_body_
 		off_cg_inertial(2) += -k_ground * penetration - b_ground * x_true(11);
 		off_cg_accels.noalias() = dcmI_B(x_true(0), x_true(1), x_true(2)).transpose() * off_cg_inertial; //gravity not subtracted because it is never added in the first place
 	}
-	
 	Vector3d a_measured = off_cg_accels + imunoise;
 
 	return a_measured;

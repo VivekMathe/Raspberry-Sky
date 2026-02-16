@@ -18,7 +18,6 @@ private:
 	Vector3d omega_measured;
 	Eigen::Matrix<double, 3, 15> H;
 	Eigen::Matrix<double, 15, 3> K;
-	const Matrix15d I15d = Matrix15d::Identity();
 public:
 	//Constructor. Need gravity vector in NED, 
 	EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav);

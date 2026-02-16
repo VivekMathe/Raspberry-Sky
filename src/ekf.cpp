@@ -17,8 +17,6 @@ EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav)
 	R = sigmav.array().square().matrix().asDiagonal();
 	P = Matrix15d::Zero();
 	radius = r;
-	H = Eigen::Matrix<double, 3, 15>::Zero();
-	H.block(0, 3, 3, 3) = Matrix3d::Identity();
 	G.setZero();
 	K.setZero();
 
@@ -64,15 +62,14 @@ void EKF::update(const Vector3d& m)
 {
 	//incorporate a measurement model measurement into state estimate
 	Vector3d res;
-	res.noalias()  = m - H * x; //calculating residual
-	Eigen::Matrix<double,15,3> PHt;
-	PHt.noalias() = P * H.transpose();
-	K.noalias() = PHt * (H * PHt + R).ldlt().solve(Matrix3d::Identity());;
+	res.noalias()  = m - x.block(3,0,3,1); //calculating residual
+	K.noalias() = P.block(0,3,15,3) * (P.block(3,3,3,3) + R).ldlt().solve(Matrix3d::Identity());;
 	Matrix15d KH;
 	KH.noalias() = K * H;
 	x = x + K * res; //incorporating residual via kalman gain
-	P = (I15d - KH) * P * (I15d - KH).transpose() + K * R * K.transpose();
-	//P = (P + P.transpose()) / 2.0;
+	//P = (I15d - KH) * P * (I15d - KH).transpose() + K * R * K.transpose(); //Joseph stable form
+	P = P - K * P.block(3,0,3,15);
+	P = (P + P.transpose()) / 2.0;
 	x(0) = wrapPi(x(0)); //ensuring angles are staying within -pi to pi
 	x(1) = wrapPi(x(1));
 	x(2) = wrapPi(x(2));
