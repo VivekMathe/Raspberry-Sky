@@ -61,7 +61,7 @@ void MotorDriver::calibrate() {
 void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
     for (int i = 0; i < NUM_MOTORS; ++i) {
         // Clamp the double input and cast to float for the hardware driver
-        pwm_val = pwm_values(i);
+        double pwm_val = pwm_values(i);
 
         if (pwm_val >= 0.0 && pwm_val <= 1.0) {
             pwm_val = 1000 + (pwm_values(i) * 1000);
