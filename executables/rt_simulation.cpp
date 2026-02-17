@@ -136,7 +136,7 @@ int main() {
 	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
 	auto telemetry_t = std::chrono::system_clock::now(); //telemetry clock
 	int cycles = 0;
-	double sim_time = 30;
+	double sim_time = 120;
 	UDPSender sender("127.0.0.1", 5000);
 	TelemetryPacket pkt;
 	uint32_t packetCounter = 0;
@@ -153,7 +153,7 @@ int main() {
 		//process model
 		current_time = std::chrono::system_clock::now();
 		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
-		//dt_secs = dt.count() / 1e6;
+		dt_secs = dt.count() / 1e6;
 
 		if (dt_secs >= 1 / process_freq)
 		{
@@ -207,14 +207,14 @@ int main() {
 				std::chrono::steady_clock::now().time_since_epoch()
 			).count();
 
-			std::memcpy(pkt.state, x.data(), STATE_SIZE * sizeof(double));
+			std::memcpy(pkt.state, ekf.getState().data(), STATE_SIZE * sizeof(double));
 			pkt.flags = 1;       // e.g., filter healthy
 			pkt.counter = packetCounter++;
 
 			sender.send(pkt);
+			
 			telemetry_t = current_time;
 		}
-
 
 	}
 	auto total_t = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - t_ref);

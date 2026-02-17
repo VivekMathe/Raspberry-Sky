@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <stdexcept>
-
+#include <iostream>
 // Constructor
 UDPSender::UDPSender(const std::string& ip, int port)
 {
@@ -31,7 +31,7 @@ UDPSender::~UDPSender()
 // Template must stay in header OR be explicitly instantiated
 void UDPSender::send(const TelemetryPacket& packet) const
 {
-    sendto(sock_,
+	sendto(sock_,
         &packet,
         sizeof(TelemetryPacket),
         0,
