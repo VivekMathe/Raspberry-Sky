@@ -17,7 +17,7 @@ Eigen::Matrix<double, 6, 1> IMUHandler::update() {
     lsm.read_gyroscope(&gx, &gy, &gz);
 
     Eigen::Matrix<double, 6, 1> data;
-    data << gx, gy, gz, ax, ay, az;
+    data << gy,gx, gz, ay, ax, -az;
 
     // Returned as a 6D eigen matrix containing acc and gyro vals
     return data;
