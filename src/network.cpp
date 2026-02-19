@@ -206,20 +206,17 @@ int openPort(void) {
 static int readSock(struct port_ref* s, void* buf, int nbytes) {
     int totalNew = 0;
     if (s->portIsOpen) {
-        int toread = 0, status;
+        int status;
         socklen_t sizeofsockaddr = sizeof(struct sockaddr);
         memcpy(&ra, &bra, sizeof(bra));
         do {
-            status = ioctl(s->fd, FIONREAD, &toread);
-            if (status == -1) {
-                printf("network: problem receiving\n");
-                return totalNew;
-            }
-            status = recvfrom(s->fd, (char*)buf, (toread < nbytes ? toread : nbytes), 0, (struct sockaddr*)(&ra), &sizeofsockaddr);
+            status = recvfrom(s->fd, (char*)buf, nbytes, 0, (struct sockaddr*)(&ra), &sizeofsockaddr);
             if (status > 0) {
                 buf = (void*)((char*)buf + status);
                 totalNew += status;
                 s->received += status;
+                nbytes -= status;
+                if (nbytes <= 0) break;
             }
         } while (status > 0);
     }
@@ -228,7 +225,7 @@ static int readSock(struct port_ref* s, void* buf, int nbytes) {
 
 Vector5d readDatalink() {
     struct port_ref* s = &thisPort;
-    int gotPacket = 0, newBytes;
+    int newBytes;
     int done = 0, index = 0;
     unsigned char* bf;
 
@@ -240,8 +237,16 @@ Vector5d readDatalink() {
 
     while ((index <= s->bytesread - (int)sizeof(datalinkHeader_ref)) && !done)
     {
-        if ((s->buffer[index] == 0xa3) &&
-            (s->buffer[index + 1] == 0xb2) &&
+        // Use memchr to quickly find the first byte of the sync sequence
+        unsigned char* ptr = (unsigned char*)memchr(&s->buffer[index], 0xa3, s->bytesread - index - sizeof(datalinkHeader_ref) + 1);
+        if (ptr == NULL) {
+             // No valid start byte found in the remaining range that could fit a header
+             index = s->bytesread;
+             break;
+        }
+        index = (int)(ptr - s->buffer);
+
+        if ((s->buffer[index + 1] == 0xb2) &&
             (s->buffer[index + 2] == 0xc1))
         {
             bf = &(s->buffer[index]);
@@ -274,17 +279,17 @@ Vector5d readDatalink() {
                     index += datalinkHeader.messageSize - 1;
                 }
                 else {
-                    index--;
+                    // Partial packet logic: we found a valid header but don't have the full body yet
+                    // Back up index so we keep this header for next time
                     done = 1;
+                    continue; // Skip the increment at the end of loop
                 }
             }
             else {
-                index += sizeof(datalinkHeader_ref);
+                index += sizeof(datalinkHeader_ref) - 1; // Skip header size, logic will increment 1 more
             }
         }
         index++;
-
-        if (index < 0) index = BUFFERSIZE - 1;
     }
 
     // Buffer cleanup logic (remains the same)
